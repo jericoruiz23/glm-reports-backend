@@ -5,27 +5,68 @@ import 'express-async-errors';
 import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middlewares/errorHandler';
+import userRoutes from './routes/user.routes';
+import cookieParser from "cookie-parser";
+import controlImportRoutes from "./routes/controlimport.routes";
+import catalogRoutes from './routes/catalog.routes';
+
 export const startServer = async () => {
-  await connectDB(); // conectar primero
+  await connectDB();
 
   const app = express();
 
   app.use(helmet());
-  app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  }));
+
+
+  // ✅ CORS (temporalmente abierto para Cloud Run)
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "https://lopezmena-importaciones.web.app",
+  ];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+
+
+  // ✅ Cookie parser
+  app.use(cookieParser());
+
+  // ✅ JSON
   app.use(express.json());
 
-  // Test simple para probar que Express funciona
-  app.get('/health', (req, res) => res.json({ ok: true }));
+  // ✅ Health check (Cloud Run friendly)
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
 
-  // Rutas
+  // 🔹 Rutas
   app.use('/api/auth', authRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/process', controlImportRoutes);
+  app.use("/api/catalogos", catalogRoutes);
 
+  // ❌ Errores
   app.use(errorHandler);
 
-  const port = parseInt(process.env.PORT || '3001', 10);
-  app.listen(port, "0.0.0.0", () => console.log(`Server running on port ${port}`));
+  // ✅ Puerto OBLIGATORIO (Cloud Run)
+  const port = Number(process.env.PORT);
+  if (!port) {
+    throw new Error('PORT no definido por el entorno');
+  }
+
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${port}`);
+  });
 };

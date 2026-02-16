@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: "admin" | "viewer";
+  passwordMustChange: boolean; // 👈 NUEVO
 }
 
 const userSchema = new Schema<IUser>(
@@ -16,6 +17,10 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["admin", "viewer"],
       default: "viewer",
+    },
+    passwordMustChange: {
+      type: Boolean,
+      default: true, // 👈 CLAVE
     },
   },
   { timestamps: true }
