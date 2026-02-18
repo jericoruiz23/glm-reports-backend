@@ -17,25 +17,8 @@ export const startServer = async () => {
 
   app.use(helmet());
 
-  // ✅ Cookie parser
-  app.use(cookieParser());
 
-  // ✅ JSON
-  app.use(express.json());
-
-  // ✅ Health check (Cloud Run friendly)
-  app.get('/health', (_req, res) => {
-    res.status(200).json({ ok: true });
-  });
-
-  // 🌐 Ruta PÚBLICA /api/process — CORS abierto para Power BI y otros clientes externos
-  app.use(
-    '/api/process',
-    cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] }),
-    controlImportRoutes
-  );
-
-  // ✅ CORS restrictivo para el resto de la API
+  // ✅ CORS (temporalmente abierto para Cloud Run)
   const allowedOrigins = [
     "http://localhost:3000",
     "https://lopezmena-importaciones.web.app",
@@ -56,9 +39,22 @@ export const startServer = async () => {
     })
   );
 
-  // 🔹 Rutas protegidas
+
+  // ✅ Cookie parser
+  app.use(cookieParser());
+
+  // ✅ JSON
+  app.use(express.json());
+
+  // ✅ Health check (Cloud Run friendly)
+  app.get('/health', (_req, res) => {
+    res.status(200).json({ ok: true });
+  });
+
+  // 🔹 Rutas
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
+  app.use('/api/process', controlImportRoutes);
   app.use("/api/catalogos", catalogRoutes);
 
   // ❌ Errores
