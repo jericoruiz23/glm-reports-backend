@@ -1,5 +1,4 @@
 import { Router } from "express";
-import multer from "multer";
 import {
    createProcess,
    getProcesses,
@@ -11,44 +10,33 @@ import {
    anularProcess,
    deleteItem
 } from "../controllers/controlimport.controller";
-
-import { ingestProcessExcel } from "../controllers/processIngest.controller";
+import { auth } from "../middlewares/auth.middleware";
+import { requireRole } from "../middlewares/role.middleware";
 
 const router = Router();
 
+router.get("/", getProcesses);
 /* =========================
-   MULTER CONFIG
+   RUTAS PROTEGIDAS
 ========================= */
-const upload = multer({
-   storage: multer.memoryStorage(),
-   limits: {
-      fileSize: 10 * 1024 * 1024 // 10MB
-   }
-});
-
-/* =========================
-   INGESTA MASIVA EXCEL
-   ⚠️ Debe ir ANTES de /:id
-========================= */
-router.post(
-   "/ingest/excel",
-   upload.single("file"),
-   ingestProcessExcel
-);
+router.use(auth); // 🔒 Todas las rutas requieren login
 
 /* =========================
    CREAR Y LISTAR
 ========================= */
 router.post("/", createProcess);
-router.get("/", getProcesses);
+
+/* =========================
+   UTILIDADES (ANTES DE /:id)
+========================= */
+router.get("/preview/codigo", previewCodigo); // 🐛 Fix: Antes de /:id
 
 /* =========================
    CRUD POR ID
 ========================= */
 router.get("/:id", getProcessById);
 router.put("/:id", updateProcess);
-router.delete("/:id", deleteProcess);
-router.get("/preview/codigo", previewCodigo);
+router.delete("/:id", requireRole("admin"), deleteProcess); // 🔒 Solo admin
 
 // Ruta para anular proceso
 router.put("/:id/anular", anularProcess);

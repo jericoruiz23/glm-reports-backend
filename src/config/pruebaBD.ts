@@ -2,77 +2,126 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import { Process } from "../models/controlimport.model";
 
-function esFechaISO(valor: any) {
-    return (
-        typeof valor === "string" &&
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/.test(valor)
-    );
-}
+/**
+ * Script de migración: normaliza TODAS las fechas existentes
+ * en la colección de procesos a mediodía UTC (T12:00:00.000Z)
+ * para evitar desfases de zona horaria.
+ *
+ * Ejecutar con:  npx ts-node src/config/pruebaBD.ts
+ */
 
-function normalizarValor(valor: any) {
-    const d = new Date(valor);
-    if (isNaN(d.getTime())) return valor;
+const STAGES = ["inicio", "preembarque", "postembarque", "aduana", "despacho"] as const;
 
-    d.setUTCHours(12, 0, 0, 0);
-    return d;
-}
+function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): boolean {
+    if (!obj || typeof obj !== "object" || depth > 10) return false;
 
-function normalizeDates(obj: any, seen = new WeakSet()) {
-    if (!obj || typeof obj !== "object") return;
-
-    if (seen.has(obj)) return;
+    // Evitar referencias circulares
+    if (seen.has(obj)) return false;
     seen.add(obj);
 
-    for (const key of Object.keys(obj)) {
-        const value = obj[key];
+    let changed = false;
 
-        if (value instanceof Date) {
-            value.setUTCHours(12, 0, 0, 0);
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            if (item && typeof item === "object") {
+                if (normalizeDateFieldsToNoon(item, seen, depth + 1)) changed = true;
+            }
         }
-        else if (esFechaISO(value)) {
-            obj[key] = normalizarValor(value);
+        return changed;
+    }
+
+    const keys = Object.keys(obj);
+    for (const key of keys) {
+        // Ignorar campos internos de Mongoose y timestamps automáticos
+        if (key.startsWith("_") || key.startsWith("$") || key === "createdAt" || key === "updatedAt" || key === "__v") continue;
+
+        let val: any;
+        try {
+            val = obj[key];
+        } catch {
+            continue; // getter que falla, saltar
         }
-        else if (Array.isArray(value)) {
-            value.forEach((v, i) => {
-                if (v instanceof Date || esFechaISO(v)) {
-                    value[i] = normalizarValor(v);
-                } else {
-                    normalizeDates(v, seen);
-                }
-            });
-        }
-        else if (typeof value === "object") {
-            normalizeDates(value, seen);
+
+        if (val instanceof Date) {
+            const h = val.getUTCHours();
+            const m = val.getUTCMinutes();
+            const s = val.getUTCSeconds();
+            const ms = val.getUTCMilliseconds();
+
+            // Solo modificar si NO está ya en mediodía
+            if (h !== 12 || m !== 0 || s !== 0 || ms !== 0) {
+                val.setUTCHours(12, 0, 0, 0);
+                changed = true;
+            }
+        } else if (val && typeof val === "object" && !(val instanceof mongoose.Types.ObjectId)) {
+            if (normalizeDateFieldsToNoon(val, seen, depth + 1)) changed = true;
         }
     }
+
+    return changed;
 }
 
 async function run() {
-    await mongoose.connect(process.env.MONGO_URI!);
-    console.log("✅ Conectado a MongoDB");
-
-    const cursor = Process.find().cursor(); // ❗ SIN lean()
-
-    let count = 0;
-
-    for await (const doc of cursor) {
-        const plain = doc.toObject(); // convertimos aquí
-
-        normalizeDates(plain);
-
-        await Process.updateOne(
-            { _id: doc._id },
-            { $set: plain }
-        );
-
-        count++;
+    const uri = process.env.MONGO_URI;
+    if (!uri) {
+        console.error("❌ MONGO_URI no definida en .env");
+        process.exit(1);
     }
 
-    console.log(`🎯 Migración completada. Procesos actualizados: ${count}`);
+    await mongoose.connect(uri);
+    console.log("✅ Conectado a MongoDB");
+
+    const total = await Process.countDocuments();
+    console.log(`📦 Total de procesos en BD: ${total}`);
+
+    const cursor = Process.find().cursor();
+
+    let updated = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    for await (const doc of cursor) {
+        try {
+            let docChanged = false;
+
+            for (const stage of STAGES) {
+                const stageData = (doc as any)[stage];
+                if (stageData) {
+                    if (normalizeDateFieldsToNoon(stageData)) {
+                        doc.markModified(stage);
+                        docChanged = true;
+                    }
+                }
+            }
+
+            if (docChanged) {
+                await doc.save(); // Dispara el pre('save') como respaldo
+                updated++;
+                if (updated % 50 === 0) {
+                    console.log(`   … ${updated} procesos actualizados`);
+                }
+            } else {
+                skipped++;
+            }
+        } catch (err: any) {
+            errors++;
+            console.error(`❌ Error en proceso ${doc._id}: ${err.message}`);
+        }
+    }
+
+    console.log("");
+    console.log("═══════════════════════════════════════════");
+    console.log("🎯 MIGRACIÓN COMPLETADA");
+    console.log(`   ✅ Actualizados:  ${updated}`);
+    console.log(`   ⏭️  Sin cambios:  ${skipped}`);
+    console.log(`   ❌ Errores:       ${errors}`);
+    console.log(`   📦 Total:         ${total}`);
+    console.log("═══════════════════════════════════════════");
+
     await mongoose.disconnect();
 }
 
 run().catch(err => {
-    console.error("❌ Error en migración", err);
+    console.error("❌ Error fatal en migración:", err);
     process.exit(1);
 });
