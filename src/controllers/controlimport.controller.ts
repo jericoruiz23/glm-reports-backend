@@ -138,9 +138,14 @@ export const createProcess = async (req: Request, res: Response) => {
 
         res.status(201).json(process);
 
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Error creating process" });
+    } catch (err: any) {
+        console.error("❌ Error en createProcess:", err);
+        res.status(500).json({
+            message: "Error creating process",
+            error: err.message || String(err),
+            name: err.name || "UnknownError",
+            stack: err.stack || null,
+        });
     }
 };
 
