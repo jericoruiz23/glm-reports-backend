@@ -257,13 +257,16 @@ export function calcularEstado(proceso: {
  * Recorre recursivamente un objeto y normaliza todos los campos Date
  * a mediodía UTC (T12:00:00.000Z) para evitar desfases de zona horaria.
  */
-function normalizeDateFieldsToNoon(obj: any): void {
-    if (!obj || typeof obj !== "object") return;
+function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): void {
+    if (!obj || typeof obj !== "object" || depth > 10) return;
+
+    if (seen.has(obj)) return;
+    seen.add(obj);
 
     // Si es un array de Mongoose (subdocumentos), iterar cada elemento
     if (Array.isArray(obj)) {
         for (const item of obj) {
-            normalizeDateFieldsToNoon(item);
+            normalizeDateFieldsToNoon(item, seen, depth + 1);
         }
         return;
     }
@@ -272,31 +275,44 @@ function normalizeDateFieldsToNoon(obj: any): void {
         // Ignorar campos internos de Mongoose y timestamps automáticos
         if (key.startsWith("_") || key === "createdAt" || key === "updatedAt") continue;
 
-        const val = obj[key];
+        let val: any;
+        try {
+            val = obj[key];
+        } catch {
+            continue; // getter que falla
+        }
 
         if (val instanceof Date) {
             val.setUTCHours(12, 0, 0, 0);
         } else if (val && typeof val === "object") {
-            normalizeDateFieldsToNoon(val);
+            normalizeDateFieldsToNoon(val, seen, depth + 1);
         }
     }
 }
 
 ProcessSchema.pre("save", function (next) {
     // 1. Normalizar TODAS las fechas del documento a mediodía UTC
-    const stages = ["inicio", "preembarque", "postembarque", "aduana", "despacho"] as const;
-    for (const stage of stages) {
-        if ((this as any)[stage]) {
-            normalizeDateFieldsToNoon((this as any)[stage]);
-        }
-    }
+    // Usamos toObject() para evitar problemas con getters de Mongoose si es necesario,
+    // pero aquí modificamos 'this' directamente.
 
-    // 2. Calcular campos automáticos
-    this.automatico = {
-        ...this.automatico,
-        ...calcularAutomatico(this),
-    };
-    next();
+    const stages = ["inicio", "preembarque", "postembarque", "aduana", "despacho"] as const;
+    try {
+        for (const stage of stages) {
+            if ((this as any)[stage]) {
+                normalizeDateFieldsToNoon((this as any)[stage]);
+            }
+        }
+
+        // 2. Calcular campos automáticos
+        this.automatico = {
+            ...this.automatico,
+            ...calcularAutomatico(this),
+        };
+        next();
+    } catch (err: any) {
+        console.error("Error en pre-save hook:", err);
+        next(err);
+    }
 });
 
 export const Process = model("Process", ProcessSchema);

@@ -8,40 +8,31 @@ import {
     getCatalogosList,
     getCatalogById
 } from "../controllers/catalog.controller";
-import { get } from "http";
+import { auth } from "../middlewares/auth.middleware";
+import { requireRole } from "../middlewares/role.middleware";
 
 const router = Router();
 
-/**
- * Obtener TODOS los catálogos
- * GET /api/catalogos
- */
+/* =========================
+   RUTAS PÚBLICAS (Lectura)
+========================= */
+// Si quieres que sean privadas, descomenta:
+// router.use(auth);
+
 router.get("/", getCatalogos);
 router.get("/list", getCatalogosList);
+
+/* =========================
+   RUTAS POR ID / TIPO
+========================= */
 router.get("/:catalogId", getCatalogById);
-/**
- * Obtener un catálogo específico por tipo
- * GET /api/catalogos/:tipo
- */
-router.get("/:tipo", getCatalogByTipo);
+router.get("/type/:tipo", getCatalogByTipo); // 🐛 Fix: Ruta explícita
 
-/**
- * Crear un nuevo tipo de catálogo
- * POST /api/catalogos
- */
-router.post("/", createCatalog);
-
-/**
- * Agregar un valor a un catálogo
- * POST /api/catalogos/:tipo/valor
- */
-router.post("/:catalogId/valor", addCatalogValue);
-
-
-/**
- * Desactivar (soft delete) un valor del catálogo
- * PATCH /api/catalogos/:tipo/valor/:key
- */
-router.delete("/:tipo/valor/:key", deleteCatalogValue);
+/* =========================
+   RUTAS PROTEGIDAS (Admin)
+========================= */
+router.post("/", auth, requireRole("admin"), createCatalog);
+router.post("/:catalogId/valor", auth, requireRole("admin"), addCatalogValue);
+router.delete("/:tipo/valor/:key", auth, requireRole("admin"), deleteCatalogValue);
 
 export default router;
