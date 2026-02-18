@@ -25,7 +25,7 @@ const ProcessSchema = new Schema(
         inicio: {
             prioridad: {
                 type: String,
-                enum: ["NORMAL", "PRIORIDAD"],
+                enum: ["NORMAL", "PRIORIDAD", "CRITICO"],
                 // default: "Normal",
             },
             codigoImportacion: String,

@@ -138,14 +138,9 @@ export const createProcess = async (req: Request, res: Response) => {
 
         res.status(201).json(process);
 
-    } catch (err: any) {
-        console.error("❌ Error en createProcess:", err);
-        res.status(500).json({
-            message: "Error creating process",
-            error: err.message || String(err),
-            name: err.name || "UnknownError",
-            stack: err.stack || null,
-        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error creating process" });
     }
 };
 
@@ -201,33 +196,18 @@ export const updateStage = async (req: Request, res: Response) => {
 
         if (prioridad) updatePayload[stage].prioridad = prioridad;
 
-        console.log(`[updateStage] Actualizando etapa ${stage} para ID ${id}`);
-        console.log(`[updateStage] Payload:`, JSON.stringify(updatePayload, null, 2));
-
         const updatedProcess = await Process.findByIdAndUpdate(id, updatePayload, { new: true });
         if (!updatedProcess) return res.status(404).json({ message: "Process not found" });
 
-        console.log(`[updateStage] findByIdAndUpdate exitoso. Recalculando estado...`);
-
         // Recalcular estado automáticamente
-        try {
-            updatedProcess.estado = calcularEstado(updatedProcess as any);
-            console.log(`[updateStage] Nuevo estado calculado: ${updatedProcess.estado}`);
-            await updatedProcess.save();
-            console.log(`[updateStage] .save() exitoso (fechas normalizadas)`);
-        } catch (saveError: any) {
-            console.error(`[updateStage] ❌ Error en .save() secundario:`, saveError);
-            // No retornamos error 500 aquí porque el update principal YA se hizo.
-            // Podríamos retornar 200 con un warning, o dejar que falle si es crítico.
-            throw saveError;
-        }
+        updatedProcess.estado = calcularEstado(updatedProcess as any);
+        await updatedProcess.save();
 
         res.json(updatedProcess);
 
-    } catch (err: any) {
-        console.error(`[updateStage] ❌ Error general:`, err);
-        console.error(err.stack);
-        res.status(500).json({ message: "Error updating stage", error: err.message });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error updating stage" });
     }
 };
 
