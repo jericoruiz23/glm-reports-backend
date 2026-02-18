@@ -114,7 +114,7 @@ export const createProcess = async (req: Request, res: Response) => {
             },
             preembarque: {
                 paisOrigen,
-                fechaFactura,
+                fechaFactura: normalizeDate(fechaFactura),
                 valorFactura,
                 items,
             },
@@ -154,11 +154,36 @@ export const updateStage = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Invalid stage" });
         }
 
-        const { prioridad, items, ...stageData } = data;
-        const updatePayload: any = { [stage]: stageData };
+        // Normalizar fechas en un objeto recursivamente
+        const normalizeDatesInObject = (obj: any): any => {
+            if (!obj || typeof obj !== "object") return obj;
+            if (Array.isArray(obj)) return obj.map(normalizeDatesInObject);
 
-        // Si vienen items, los asignamos directamente
-        if (items) updatePayload[stage].items = items;
+            const result: any = {};
+            for (const [key, val] of Object.entries(obj)) {
+                if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}(T|$)/.test(val)) {
+                    const d = new Date(val);
+                    if (!isNaN(d.getTime())) {
+                        d.setUTCHours(12, 0, 0, 0);
+                        result[key] = d;
+                    } else {
+                        result[key] = val;
+                    }
+                } else if (val && typeof val === "object") {
+                    result[key] = normalizeDatesInObject(val);
+                } else {
+                    result[key] = val;
+                }
+            }
+            return result;
+        };
+
+        const { prioridad, items, ...stageData } = data;
+        const normalizedStageData = normalizeDatesInObject(stageData);
+        const updatePayload: any = { [stage]: normalizedStageData };
+
+        // Si vienen items, los asignamos directamente (normalizados)
+        if (items) updatePayload[stage].items = normalizeDatesInObject(items);
 
         // Actualizar currentStage solo si avanza
         const stageOrder = ["inicio", "preembarque", "postembarque", "aduana", "despacho", "finalizado"];
@@ -236,6 +261,23 @@ export const updateProcess = async (req: Request, res: Response) => {
 
         const stageNames = ["inicio", "preembarque", "postembarque", "aduana", "despacho", "automatico"] as const;
 
+        // Normalizar fechas a mediodía UTC
+        const normalizeDate = (value?: string | Date | null) => {
+            if (!value) return null;
+            const d = new Date(value);
+            if (isNaN(d.getTime())) return value; // no es fecha, dejar como está
+            d.setUTCHours(12, 0, 0, 0);
+            return d;
+        };
+
+        // Detectar si un valor es una fecha ISO string
+        const looksLikeDate = (val: any): boolean => {
+            if (val instanceof Date) return true;
+            if (typeof val !== "string") return false;
+            // Patrón ISO date: 2024-01-15 o 2024-01-15T...
+            return /^\d{4}-\d{2}-\d{2}(T|$)/.test(val);
+        };
+
         const proc = await Process.findById(id);
         if (!proc) return res.status(404).json({ message: "Process not found" });
 
@@ -258,7 +300,9 @@ export const updateProcess = async (req: Request, res: Response) => {
                                     // Iteramos y actualizamos solo lo que cambió en ESE item
                                     for (const [itemKey, itemVal] of Object.entries(value as object)) {
                                         if (itemVal !== undefined) {
-                                            (itemToUpdate as any)[itemKey] = itemVal;
+                                            (itemToUpdate as any)[itemKey] = looksLikeDate(itemVal)
+                                                ? normalizeDate(itemVal as string)
+                                                : itemVal;
                                         }
                                     }
                                 }
@@ -268,8 +312,11 @@ export const updateProcess = async (req: Request, res: Response) => {
                             continue;
                         }
 
-                        // Lógica genérica normal para el resto de campos (no arrays)
-                        (proc as any)[stage][key] = value;
+                        // Lógica genérica normal para el resto de campos
+                        // Normalizar si parece una fecha
+                        (proc as any)[stage][key] = looksLikeDate(value)
+                            ? normalizeDate(value as string)
+                            : value;
 
                         // Sincronización (Tu código original)
                         if (stage === "inicio" && key === "codigoImportacion") {
@@ -286,7 +333,7 @@ export const updateProcess = async (req: Request, res: Response) => {
         }
 
         proc.estado = calcularEstado(proc as any);
-        await proc.save(); // Aquí Mongoose ahora guardará bien las Fechas dentro del Array
+        await proc.save(); // pre('save') también normaliza fechas como respaldo
         res.json(proc);
 
     } catch (err) {

@@ -253,7 +253,45 @@ export function calcularEstado(proceso: {
     return "por despachar origen";
 }
 
+/**
+ * Recorre recursivamente un objeto y normaliza todos los campos Date
+ * a mediodía UTC (T12:00:00.000Z) para evitar desfases de zona horaria.
+ */
+function normalizeDateFieldsToNoon(obj: any): void {
+    if (!obj || typeof obj !== "object") return;
+
+    // Si es un array de Mongoose (subdocumentos), iterar cada elemento
+    if (Array.isArray(obj)) {
+        for (const item of obj) {
+            normalizeDateFieldsToNoon(item);
+        }
+        return;
+    }
+
+    for (const key of Object.keys(obj)) {
+        // Ignorar campos internos de Mongoose y timestamps automáticos
+        if (key.startsWith("_") || key === "createdAt" || key === "updatedAt") continue;
+
+        const val = obj[key];
+
+        if (val instanceof Date) {
+            val.setUTCHours(12, 0, 0, 0);
+        } else if (val && typeof val === "object") {
+            normalizeDateFieldsToNoon(val);
+        }
+    }
+}
+
 ProcessSchema.pre("save", function (next) {
+    // 1. Normalizar TODAS las fechas del documento a mediodía UTC
+    const stages = ["inicio", "preembarque", "postembarque", "aduana", "despacho"] as const;
+    for (const stage of stages) {
+        if ((this as any)[stage]) {
+            normalizeDateFieldsToNoon((this as any)[stage]);
+        }
+    }
+
+    // 2. Calcular campos automáticos
     this.automatico = {
         ...this.automatico,
         ...calcularAutomatico(this),

@@ -229,15 +229,20 @@ const get = (row: any, keys: string[]) =>
 const parseDate = (value: any): Date | null => {
     if (!value) return null;
 
+    let d: Date;
+
     if (value instanceof Date) {
-        return value;
-    }
-
-    if (typeof value === "number") {
+        d = new Date(value);
+    } else if (typeof value === "number") {
         const excelEpoch = new Date(1899, 11, 30);
-        return new Date(excelEpoch.getTime() + value * 86400000);
+        d = new Date(excelEpoch.getTime() + value * 86400000);
+    } else {
+        d = new Date(value);
     }
 
-    const parsed = new Date(value);
-    return isNaN(parsed.getTime()) ? null : parsed;
+    if (isNaN(d.getTime())) return null;
+
+    // Normalizar a mediodía UTC para evitar desfases de zona horaria
+    d.setUTCHours(12, 0, 0, 0);
+    return d;
 };
