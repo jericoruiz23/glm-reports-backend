@@ -6,7 +6,13 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node src/seed/seedAdmin.ts"
+    "seed": "ts-node src/seed/seedAdmin.ts",
+    "metrics:backfill": "ts-node src/config/backfillProcessMetrics.ts backfill",
+    "metrics:run": "ts-node src/config/backfillProcessMetrics.ts run",
+    "metrics:worker": "ts-node src/config/runProcessMetricsWorker.ts",
+    "metrics:cleanup-orphans": "ts-node src/config/cleanupOrphanProcessMetrics.ts",
+    "metrics:cleanup-legacy-automatico": "ts-node src/config/cleanupLegacyAutomatico.ts",
+    "test:metrics": "vitest run tests/metrics tests/controllers"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +44,7 @@
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

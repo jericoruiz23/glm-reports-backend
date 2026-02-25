@@ -69,7 +69,6 @@ export const evaluarEtaEnvioElectronico = (process: any) => {
 };
 
 export const evaluarEtaSalidaAutorizada = (process: any) => {
-    console.log("EVALUANDO ETA SALIDA", process._id);
     const fechaETA = process?.postembarque?.fechaRealLlegadaPuerto;
     const fechaSalida = process?.aduana?.fechaSalidaAutorizada;
 
@@ -163,4 +162,17 @@ export const evaluarEntregaBodega = (process: any) => {
         atrasado: diferencia > 0,
         diferencia: diferencia > 0 ? diferencia : 0,
     };
+};
+
+export const evaluarDemorraje = (
+    process: any,
+    estandar: number
+): "CUMPLE" | "NO_CUMPLE" | null => {
+    const valor = process?.despacho?.demorraje;
+    const valorReal =
+        typeof valor === "number" && Number.isFinite(valor) ? valor : null;
+
+    if (valorReal === null || !Number.isFinite(estandar)) return null;
+
+    return valorReal <= estandar ? "CUMPLE" : "NO_CUMPLE";
 };

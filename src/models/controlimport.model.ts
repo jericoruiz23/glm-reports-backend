@@ -183,6 +183,7 @@ const ProcessSchema = new Schema(
             peso: Number,
             bultos: Number,
             tipoContenedor: String,
+            cantidadContenedores: Number,
 
             fechaEstDespachoPuerto: Date,
             fechaRealDespachoPuerto: Date,
@@ -218,6 +219,21 @@ const ProcessSchema = new Schema(
             rangoCarpetas: Number,
             diasHabilesRealEtaEnvioElectronico: Number,
             diasHabilesRealEnvioDesaduanizacion: Number,
+            // @deprecated Compatibilidad temporal y solo lectura:
+            // este contrato se mantiene en la colección del formulario mientras
+            // la lectura principal ya usa `process_metrics`.
+            // No extender aquí nuevos KPIs.
+            cumplimientoDemorraje: {
+                estandar: Number,
+                valorReal: Number,
+                cumple: Boolean,
+                estado: {
+                    type: String,
+                    enum: ["CUMPLE", "NO_CUMPLE", null],
+                    default: null,
+                },
+                diferencia: Number,
+            },
         },
 
         currentStage: {
@@ -308,6 +324,10 @@ ProcessSchema.pre("save", function (next) {
             ...this.automatico,
             ...calcularAutomatico(this),
         };
+        // Fase 8: legacy retirado, no mantener cumplimientoDemorraje en runtime.
+        if (this.automatico && "cumplimientoDemorraje" in this.automatico) {
+            delete (this.automatico as any).cumplimientoDemorraje;
+        }
         next();
     } catch (err: any) {
         console.error("Error en pre-save hook:", err);

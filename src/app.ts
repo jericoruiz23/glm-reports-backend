@@ -9,6 +9,7 @@ import userRoutes from './routes/user.routes';
 import cookieParser from "cookie-parser";
 import controlImportRoutes from "./routes/controlimport.routes";
 import catalogRoutes from './routes/catalog.routes';
+import processMetricsRoutes from "./routes/processMetrics.routes";
 
 export const startServer = async () => {
   await connectDB();
@@ -54,6 +55,9 @@ export const startServer = async () => {
   // 🔹 Rutas
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
+  // Rutas de métricas materializadas por proceso.
+  // Deben montarse antes de `controlImportRoutes` para evitar colisión con `/:id`.
+  app.use('/api/process', processMetricsRoutes);
   app.use('/api/process', controlImportRoutes);
   app.use("/api/catalogos", catalogRoutes);
 
