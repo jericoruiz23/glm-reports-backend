@@ -7,7 +7,7 @@ import {
     runBatch,
 } from "../metrics/processMetrics.worker";
 
-type CommandMode = "backfill" | "run";
+type CommandMode = "backfill" | "run" | "rebuild";
 
 // Marca histórico completo como stale para encolar recálculo.
 const markHistoricalAsStale = async (batchLogEvery = 200) => {
@@ -61,13 +61,23 @@ const runUntilQueueDrains = async (batchSize = 100) => {
 
 const main = async () => {
     const modeArg = String(process.argv[2] ?? "backfill").toLowerCase();
-    const mode: CommandMode = modeArg === "run" ? "run" : "backfill";
+    const mode: CommandMode =
+        modeArg === "run"
+            ? "run"
+            : modeArg === "rebuild"
+                ? "rebuild"
+                : "backfill";
 
     await connectDB();
 
     if (mode === "backfill") {
         await markHistoricalAsStale();
+    } else if (mode === "run") {
+        await runUntilQueueDrains();
     } else {
+        console.log("[metrics:rebuild] marking historical processes as stale...");
+        await markHistoricalAsStale();
+        console.log("[metrics:rebuild] draining stale queue...");
         await runUntilQueueDrains();
     }
 

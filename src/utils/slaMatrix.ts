@@ -250,6 +250,9 @@ const normalizarTexto = (texto: string) =>
         .toUpperCase()
         .trim();
 
+const esPrioridadAlta = (prioridad: string): boolean =>
+    prioridad === "PRIORIDAD" || prioridad === "CRITICO";
+
 
 export const resolverSLAEtaEnvio = (process: any): number | null => {
     const regimen = String(process?.inicio?.regimen ?? "");
@@ -277,7 +280,7 @@ export const resolverSLAEtaEnvio = (process: any): number | null => {
 
     if (!rule) return null;
 
-    return prioridad === "PRIORIDAD" ? rule.prioridad : rule.normal;
+    return esPrioridadAlta(prioridad) ? rule.prioridad : rule.normal;
 };
 
 export const resolverSLASalidaAutorizada = (process: any): number | null => {
@@ -320,7 +323,7 @@ export const resolverSLASalidaAutorizada = (process: any): number | null => {
 
     if (!tipo) return null;
 
-    const config = prioridad === "PRIORIDAD"
+    const config = esPrioridadAlta(prioridad)
         ? rule.prioridad
         : rule.normal;
 
@@ -387,7 +390,7 @@ export const resolverSLAEtaSalidaAutorizada = (process: any): number | null => {
 
     if (!tipo) return null;
 
-    const config = prioridad === "PRIORIDAD"
+    const config = esPrioridadAlta(prioridad)
         ? rule.prioridad
         : rule.normal;
 
@@ -425,5 +428,5 @@ export const resolverSLAEntregaBodega = (process: any): number | null => {
 
     if (!rule) return null;
 
-    return prioridad === "PRIORIDAD" ? rule.prioridad : rule.normal;
+    return esPrioridadAlta(prioridad) ? rule.prioridad : rule.normal;
 };

@@ -9,6 +9,7 @@
     "seed": "ts-node src/seed/seedAdmin.ts",
     "metrics:backfill": "ts-node src/config/backfillProcessMetrics.ts backfill",
     "metrics:run": "ts-node src/config/backfillProcessMetrics.ts run",
+    "metrics:rebuild": "ts-node src/config/backfillProcessMetrics.ts rebuild",
     "metrics:worker": "ts-node src/config/runProcessMetricsWorker.ts",
     "metrics:cleanup-orphans": "ts-node src/config/cleanupOrphanProcessMetrics.ts",
     "metrics:cleanup-legacy-automatico": "ts-node src/config/cleanupLegacyAutomatico.ts",

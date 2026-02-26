@@ -17,14 +17,14 @@ import { requireRole } from "../middlewares/role.middleware";
 import { simpleRateLimit } from "../middlewares/simpleRateLimit.middleware";
 
 const router = Router();
-
+router.get("/metrics", getProcessMetrics);
 // Todas las rutas de métricas requieren autenticación.
 router.use(auth);
 
 // Salud operativa de la cola/materializado (solo admin).
 router.get("/metrics/health", requireRole("admin"), getProcessMetricsHealth);
 // Listado de documentos materializados (solo admin).
-router.get("/metrics", requireRole("admin"), getProcessMetrics);
+
 // Métrica de adopción legacy=true (solo admin).
 router.get("/metrics/legacy-usage", requireRole("admin"), getLegacyUsage);
 
