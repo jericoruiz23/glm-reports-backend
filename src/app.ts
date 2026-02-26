@@ -15,6 +15,7 @@ export const startServer = async () => {
   await connectDB();
 
   const app = express();
+  app.set("etag", false);
 
   app.use(helmet());
 

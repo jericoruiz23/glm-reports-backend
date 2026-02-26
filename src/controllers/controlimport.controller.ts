@@ -258,6 +258,11 @@ export const updateStage = async (req: Request, res: Response) => {
 
 export const getProcesses = async (req: Request, res: Response) => {
     try {
+        // Evita cachear listados para consumidores como Power Query.
+        res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+
         // Fase 8: el modo legacy=true queda retirado del runtime.
         const legacyRequested = String(req.query.legacy ?? "false") === "true";
         if (legacyRequested) {
@@ -268,10 +273,7 @@ export const getProcesses = async (req: Request, res: Response) => {
             });
         }
 
-        const all = String(req.query.all ?? "true") === "true";
-        const page = all ? 1 : Math.max(Number(req.query.page ?? 1), 1);
-        const limit = all ? 200 : Math.min(Math.max(Number(req.query.limit ?? 20), 1), 200);
-        const skip = all ? 0 : (page - 1) * limit;
+        const page = 1;
         const processType = String(req.query.processType ?? "").trim();
         const estado = String(req.query.estado ?? "").trim();
         const from = req.query.from ? new Date(String(req.query.from)) : null;
@@ -294,17 +296,10 @@ export const getProcesses = async (req: Request, res: Response) => {
         // Header de version de contrato final GA.
         res.setHeader("X-Metrics-Contract-Version", METRICS_API_CONTRACT_VERSION);
 
-        const processesPromise = all
-            ? Process.find(query)
-                .select(projection)
-                .sort({ updatedAt: -1 })
-                .lean()
-            : Process.find(query)
-                .select(projection)
-                .sort({ updatedAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .lean();
+        const processesPromise = Process.find(query)
+            .select(projection)
+            .sort({ updatedAt: -1 })
+            .lean();
 
         const [processes, total, activeRuleSetVersion] = await Promise.all([
             processesPromise,
@@ -393,9 +388,9 @@ export const getProcesses = async (req: Request, res: Response) => {
         res.json({
             data: enriched,
             page,
-            limit: all ? total : limit,
+            limit: total,
             total,
-            totalPages: all ? 1 : Math.ceil(total / limit),
+            totalPages: 1,
             ruleSetVersion: activeRuleSetVersion ?? KPI_RULE_SET_VERSION_V1,
             contractVersion: METRICS_API_CONTRACT_VERSION,
         });
