@@ -272,9 +272,10 @@ export const getProcessMetricsHealth = async (req: Request, res: Response) => {
 // Lista materializados con paginación/filtros para operación/admin.
 export const getProcessMetrics = async (req: Request, res: Response) => {
     try {
-        const page = Math.max(Number(req.query.page ?? 1), 1);
-        const limit = Math.min(Math.max(Number(req.query.limit ?? 100), 1), 200);
-        const skip = (page - 1) * limit;
+        const all = String(req.query.all ?? "true") === "true";
+        const page = all ? 1 : Math.max(Number(req.query.page ?? 1), 1);
+        const limit = all ? 200 : Math.min(Math.max(Number(req.query.limit ?? 100), 1), 200);
+        const skip = all ? 0 : (page - 1) * limit;
 
         const status = String(req.query.status ?? "").trim();
         const ruleSetVersion = String(req.query.ruleSetVersion ?? "").trim();
@@ -314,12 +315,16 @@ export const getProcessMetrics = async (req: Request, res: Response) => {
             };
         }
 
-        const [rows, total, activeRuleSetVersion] = await Promise.all([
-            ProcessMetrics.find(query)
+        const rowsPromise = all
+            ? ProcessMetrics.find(query).sort({ updatedAt: -1 }).lean()
+            : ProcessMetrics.find(query)
                 .sort({ updatedAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .lean(),
+                .lean();
+
+        const [rows, total, activeRuleSetVersion] = await Promise.all([
+            rowsPromise,
             ProcessMetrics.countDocuments(query),
             getActiveRuleSetVersion(),
         ]);
@@ -345,9 +350,9 @@ export const getProcessMetrics = async (req: Request, res: Response) => {
             contractVersion: METRICS_API_CONTRACT_VERSION,
             activeRuleSetVersion,
             page,
-            limit,
+            limit: all ? total : limit,
             total,
-            totalPages: Math.ceil(total / limit),
+            totalPages: all ? 1 : Math.ceil(total / limit),
             filters: {
                 status: status || null,
                 ruleSetVersion: ruleSetVersion || null,

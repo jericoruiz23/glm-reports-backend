@@ -268,9 +268,10 @@ export const getProcesses = async (req: Request, res: Response) => {
             });
         }
 
-        const page = Math.max(Number(req.query.page ?? 1), 1);
-        const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 200);
-        const skip = (page - 1) * limit;
+        const all = String(req.query.all ?? "true") === "true";
+        const page = all ? 1 : Math.max(Number(req.query.page ?? 1), 1);
+        const limit = all ? 200 : Math.min(Math.max(Number(req.query.limit ?? 20), 1), 200);
+        const skip = all ? 0 : (page - 1) * limit;
         const processType = String(req.query.processType ?? "").trim();
         const estado = String(req.query.estado ?? "").trim();
         const from = req.query.from ? new Date(String(req.query.from)) : null;
@@ -293,13 +294,20 @@ export const getProcesses = async (req: Request, res: Response) => {
         // Header de version de contrato final GA.
         res.setHeader("X-Metrics-Contract-Version", METRICS_API_CONTRACT_VERSION);
 
-        const [processes, total, activeRuleSetVersion] = await Promise.all([
-            Process.find(query)
+        const processesPromise = all
+            ? Process.find(query)
+                .select(projection)
+                .sort({ updatedAt: -1 })
+                .lean()
+            : Process.find(query)
                 .select(projection)
                 .sort({ updatedAt: -1 })
                 .skip(skip)
                 .limit(limit)
-                .lean(),
+                .lean();
+
+        const [processes, total, activeRuleSetVersion] = await Promise.all([
+            processesPromise,
             Process.countDocuments(query),
             getActiveRuleSetVersion(),
         ]);
@@ -385,9 +393,9 @@ export const getProcesses = async (req: Request, res: Response) => {
         res.json({
             data: enriched,
             page,
-            limit,
+            limit: all ? total : limit,
             total,
-            totalPages: Math.ceil(total / limit),
+            totalPages: all ? 1 : Math.ceil(total / limit),
             ruleSetVersion: activeRuleSetVersion ?? KPI_RULE_SET_VERSION_V1,
             contractVersion: METRICS_API_CONTRACT_VERSION,
         });
