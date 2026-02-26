@@ -269,7 +269,7 @@ export const getProcesses = async (req: Request, res: Response) => {
         }
 
         const page = Math.max(Number(req.query.page ?? 1), 1);
-        const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 100);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 200);
         const skip = (page - 1) * limit;
         const processType = String(req.query.processType ?? "").trim();
         const estado = String(req.query.estado ?? "").trim();

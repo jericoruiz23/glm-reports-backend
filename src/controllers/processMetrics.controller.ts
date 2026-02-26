@@ -273,7 +273,7 @@ export const getProcessMetricsHealth = async (req: Request, res: Response) => {
 export const getProcessMetrics = async (req: Request, res: Response) => {
     try {
         const page = Math.max(Number(req.query.page ?? 1), 1);
-        const limit = Math.min(Math.max(Number(req.query.limit ?? 20), 1), 100);
+        const limit = Math.min(Math.max(Number(req.query.limit ?? 100), 1), 200);
         const skip = (page - 1) * limit;
 
         const status = String(req.query.status ?? "").trim();
