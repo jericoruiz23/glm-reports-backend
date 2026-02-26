@@ -17,15 +17,17 @@ import { requireRole } from "../middlewares/role.middleware";
 import { simpleRateLimit } from "../middlewares/simpleRateLimit.middleware";
 
 const router = Router();
+
+// Publico: resumen general de metricas
 router.get("/metrics", getProcessMetrics);
-// Todas las rutas de métricas requieren autenticación.
-router.use(auth);
+
+// El resto de rutas bajo /metrics requieren autenticacion.
+router.use("/metrics", auth);
 
 // Salud operativa de la cola/materializado (solo admin).
 router.get("/metrics/health", requireRole("admin"), getProcessMetricsHealth);
-// Listado de documentos materializados (solo admin).
 
-// Métrica de adopción legacy=true (solo admin).
+// Metrica de adopcion legacy=true (solo admin).
 router.get("/metrics/legacy-usage", requireRole("admin"), getLegacyUsage);
 
 // Gobernanza de rule sets (admin).
@@ -43,11 +45,12 @@ router.post(
 );
 
 // Lectura de materializado por processId.
-router.get("/:id/metrics", getProcessMetricsByProcessId);
+router.get("/:id/metrics", auth, getProcessMetricsByProcessId);
 
 // Recalculo manual: restringido a admin.
 router.post(
     "/:id/metrics/recalculate",
+    auth,
     requireRole("admin"),
     simpleRateLimit(30, 60_000),
     recalculateProcessMetrics
