@@ -1,14 +1,20 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 
 const {
     findOneMock,
+    findMock,
+    countDocumentsMock,
     findByIdMock,
+    aggregateMock,
     markStaleMock,
     runForProcessMock,
 } = vi.hoisted(() => ({
     findOneMock: vi.fn(),
+    findMock: vi.fn(),
+    countDocumentsMock: vi.fn(),
     findByIdMock: vi.fn(),
+    aggregateMock: vi.fn(),
     markStaleMock: vi.fn(),
     runForProcessMock: vi.fn(),
 }));
@@ -16,12 +22,15 @@ const {
 vi.mock("../../src/models/processMetrics.model", () => ({
     default: {
         findOne: findOneMock,
+        find: findMock,
+        countDocuments: countDocumentsMock,
     },
 }));
 
 vi.mock("../../src/models/controlimport.model", () => ({
     Process: {
         findById: findByIdMock,
+        aggregate: aggregateMock,
     },
 }));
 
@@ -58,6 +67,7 @@ vi.mock("../../src/metrics/metricsAudit.service", () => ({
 
 import {
     getProcessMetricsByProcessId,
+    getProcessMetrics,
     recalculateProcessMetrics,
 } from "../../src/controllers/processMetrics.controller";
 
@@ -65,16 +75,68 @@ const createRes = () => {
     const res = {} as Response;
     (res.status as any) = vi.fn(() => res);
     (res.json as any) = vi.fn(() => res);
+    (res.setHeader as any) = vi.fn(() => res);
     return res;
 };
 
 describe("processMetrics.controller", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it("returns 404 when materialized metrics do not exist", async () => {
         findOneMock.mockReturnValueOnce({ lean: async () => null });
         const req = { params: { id: "507f1f77bcf86cd799439011" } } as unknown as Request;
         const res = createRes();
         await getProcessMetricsByProcessId(req, res);
         expect(res.status).toHaveBeenCalledWith(404);
+    });
+
+    it("adds globalKpis.TOTAL_CONTENEDORES_GLOBAL to list response", async () => {
+        findMock.mockReturnValueOnce({
+            sort: () => ({
+                lean: async () => [],
+            }),
+        });
+        countDocumentsMock.mockResolvedValueOnce(0);
+        aggregateMock.mockResolvedValueOnce([{ _id: null, total: 27 }]);
+
+        const req = { query: {} } as unknown as Request;
+        const res = createRes();
+        await getProcessMetrics(req, res);
+
+        expect(aggregateMock).toHaveBeenCalledTimes(1);
+        expect(res.json).toHaveBeenCalledWith(
+            expect.objectContaining({
+                globalKpis: {
+                    TOTAL_CONTENEDORES_GLOBAL: {
+                        result: "success",
+                        slaTarget: null,
+                        actualValue: 27,
+                        delta: null,
+                        meta: { scope: "global" },
+                    },
+                },
+                data: [],
+            })
+        );
+    });
+
+    it("defaults TOTAL_CONTENEDORES_GLOBAL to 0 when aggregate has no rows", async () => {
+        findMock.mockReturnValueOnce({
+            sort: () => ({
+                lean: async () => [],
+            }),
+        });
+        countDocumentsMock.mockResolvedValueOnce(0);
+        aggregateMock.mockResolvedValueOnce([]);
+
+        const req = { query: {} } as unknown as Request;
+        const res = createRes();
+        await getProcessMetrics(req, res);
+
+        const payload = (res.json as any).mock.calls[0][0];
+        expect(payload.globalKpis.TOTAL_CONTENEDORES_GLOBAL.actualValue).toBe(0);
     });
 
     it("recalculate with runNow executes targeted worker", async () => {

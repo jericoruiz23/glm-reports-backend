@@ -320,12 +320,36 @@ export const getProcessMetrics = async (req: Request, res: Response) => {
         const rowsPromise = ProcessMetrics.find(query)
             .sort({ updatedAt: -1 })
             .lean();
+        const totalContainersGlobalPromise = Process.aggregate([
+            { $match: { anulado: { $ne: true } } },
+            {
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: {
+                            $cond: [
+                                { $isNumber: "$despacho.cantidadContenedores" },
+                                "$despacho.cantidadContenedores",
+                                0,
+                            ],
+                        },
+                    },
+                },
+            },
+        ]);
 
-        const [rows, total, activeRuleSetVersion] = await Promise.all([
+        const [rows, total, activeRuleSetVersion, totalContainersGlobalRows] = await Promise.all([
             rowsPromise,
             ProcessMetrics.countDocuments(query),
             getActiveRuleSetVersion(),
+            totalContainersGlobalPromise,
         ]);
+        const totalContainersGlobal = Number(
+            (Array.isArray(totalContainersGlobalRows) &&
+            totalContainersGlobalRows.length > 0
+                ? totalContainersGlobalRows[0]?.total
+                : 0) ?? 0
+        );
 
         const data = rows.map((item: any) => ({
             processId: item.processId,
@@ -358,6 +382,17 @@ export const getProcessMetrics = async (req: Request, res: Response) => {
                 processId: processId || null,
                 updatedFrom: updatedFrom?.toISOString() ?? null,
                 updatedTo: updatedTo?.toISOString() ?? null,
+            },
+            globalKpis: {
+                TOTAL_CONTENEDORES_GLOBAL: {
+                    result: "success",
+                    slaTarget: null,
+                    actualValue: totalContainersGlobal,
+                    delta: null,
+                    meta: {
+                        scope: "global",
+                    },
+                },
             },
             data,
         });
