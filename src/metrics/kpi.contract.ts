@@ -1,9 +1,17 @@
 // Contrato de alcance de KPIs congelado para la primera versión.
 export const KPI_SCOPE_V1 = [
     "ETA_ENVIO",
+    "ENVIO_SALIDA_AUTORIZADA",
     "ETA_SALIDA",
     "ENTREGA_BODEGA",
+    "GESTION_BODEGAS_TRANSPORTE_NORMAL_AUTO",
+    "GESTION_BODEGAS_TRANSPORTE_PRIORIDAD_AUTO",
+    "DIA_PARA_DESPACHO",
+    "ETA_DESPACHO_TOTAL",
+    "ETA_ENTREGA_BODEGA_TOTAL",
+    "ENTREGA_BODEGA_CARPETAS",
     "DEMORRAJE",
+    "ESTANDAR_GLOBAL_TOTAL_PCT",
 ] as const;
 
 // Versión inicial de reglas para trazabilidad de cambios de negocio.
