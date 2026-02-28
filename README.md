@@ -22,10 +22,14 @@ Flow:
   - Contract version: `2026.06.v1`
   - Legacy mode retired on: `2026-02-24`
 
-- List processes (materialized KPI snapshot):
+- List processes (operational data only):
   - `GET /api/process`
   - Supports: `page`, `limit`, `processType`, `estado`, `from`, `to`
+  - Returns only process operational data. It does not include `metricasTransito` or `cumplimientoDemorraje`.
   - `legacy=true` now returns `410 Gone`
+- Official KPI source (`fuente oficial KPI`):
+  - `GET /api/process/metrics`
+  - Includes materialized KPI rows plus `globalKpis` such as `TOTAL_CONTENEDORES_GLOBAL`.
 - KPI detail for one process:
   - `GET /api/process/:id/metrics`
 - Manual recalc for one process:

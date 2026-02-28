@@ -4,8 +4,6 @@ import { Process, calcularEstado } from "../models/controlimport.model";
 import { Counter } from "../models/counter.model";
 import { markProcessMetricsStale } from "../metrics/processMetrics.service";
 import ProcessMetrics from "../models/processMetrics.model";
-import { KPI_RULE_SET_VERSION_V1, kpisArrayToMap } from "../metrics/kpi.contract";
-import { getActiveRuleSetVersion } from "../metrics/ruleSet.service";
 import { METRICS_API_CONTRACT_VERSION } from "../metrics/metrics.contract";
 // Crear un nuevo proceso con items completos
 const extractSeqFromCodigo = (codigo: string): number | null => {
@@ -258,6 +256,7 @@ export const updateStage = async (req: Request, res: Response) => {
 
 export const getProcesses = async (req: Request, res: Response) => {
     try {
+        // Listado operativo: los KPIs se consultan solo en /api/process/metrics.
         // Evita cachear listados para consumidores como Power Query.
         res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
         res.setHeader("Pragma", "no-cache");
@@ -269,7 +268,7 @@ export const getProcesses = async (req: Request, res: Response) => {
             return res.status(410).json({
                 contractVersion: METRICS_API_CONTRACT_VERSION,
                 message:
-                    "legacy=true retired. Use default materialized metrics contract.",
+                    "legacy=true retired. Use /api/process/metrics as the official KPI source.",
             });
         }
 
@@ -293,106 +292,40 @@ export const getProcesses = async (req: Request, res: Response) => {
         const projection =
             "_id proceso codigoImportacion estado currentStage updatedAt createdAt anulado inicio preembarque postembarque aduana despacho automatico";
 
-        // Header de version de contrato final GA.
-        res.setHeader("X-Metrics-Contract-Version", METRICS_API_CONTRACT_VERSION);
-
         const processesPromise = Process.find(query)
             .select(projection)
             .sort({ updatedAt: -1 })
             .lean();
 
-        const [processes, total, activeRuleSetVersion] = await Promise.all([
+        const [processes, total] = await Promise.all([
             processesPromise,
             Process.countDocuments(query),
-            getActiveRuleSetVersion(),
         ]);
+        const data = processes.map((processDoc: any) => {
+            const automatico = processDoc?.automatico;
+            if (!automatico || typeof automatico !== "object") {
+                return processDoc;
+            }
 
-        const processIds = processes.map((p: any) => p?._id).filter(Boolean);
+            const { cumplimientoDemorraje, ...operationalAutomatico } =
+                automatico as Record<string, unknown>;
 
-        // Lectura principal desde materializado (sin calculo en vivo).
-        const metricsDocs = await ProcessMetrics.find({
-            processId: { $in: processIds },
-            ruleSetVersion: activeRuleSetVersion ?? KPI_RULE_SET_VERSION_V1,
-        }).lean();
+            if (cumplimientoDemorraje === undefined) {
+                return processDoc;
+            }
 
-        const metricsByProcessId = new Map<string, any>();
-        for (const doc of metricsDocs) {
-            metricsByProcessId.set(String(doc.processId), doc);
-        }
-
-        const enriched = processes.map((p) => {
-            const materialized = metricsByProcessId.get(String((p as any)._id));
-            const metricasTransito = !materialized
-                ? {
-                    status: "pending",
-                    stale: true,
-                    ruleSetVersion: activeRuleSetVersion ?? KPI_RULE_SET_VERSION_V1,
-                    calculatedAt: null,
-                    lastError: null,
-                    summary: null,
-                    kpis: {},
-                }
-                : {
-                    status: materialized.status,
-                    stale:
-                        materialized.status === "stale" ||
-                        materialized.status === "calculating",
-                    ruleSetVersion:
-                        materialized.ruleSetVersion ??
-                        activeRuleSetVersion ??
-                        KPI_RULE_SET_VERSION_V1,
-                    calculatedAt: materialized.calculatedAt ?? null,
-                    lastError:
-                        materialized.status === "error"
-                            ? materialized.lastError ?? null
-                            : null,
-                    summary: materialized.summary ?? null,
-                    kpis: kpisArrayToMap(materialized.kpis),
-                };
-
-            const demorraje = (metricasTransito as any)?.kpis?.DEMORRAJE;
-            const cumplimientoDemorraje = !demorraje
-                ? {
-                    estandar: null,
-                    valorReal: null,
-                    cumple: null,
-                    estado: null,
-                    diferencia: null,
-                }
-                : {
-                    estandar: typeof demorraje?.slaTarget === "number" ? demorraje.slaTarget : null,
-                    valorReal: typeof demorraje?.actualValue === "number" ? demorraje.actualValue : null,
-                    cumple:
-                        demorraje?.result === "success"
-                            ? true
-                            : demorraje?.result === "fail"
-                            ? false
-                            : null,
-                    estado:
-                        demorraje?.result === "success"
-                            ? "CUMPLE"
-                            : demorraje?.result === "fail"
-                            ? "NO_CUMPLE"
-                            : null,
-                    diferencia: typeof demorraje?.delta === "number" ? demorraje.delta : null,
-                };
             return {
-                ...p,
-                metricasTransito: {
-                    ...metricasTransito,
-                    cumplimientoDemorraje,
-                },
+                ...processDoc,
+                automatico: operationalAutomatico,
             };
         });
 
         res.json({
-            data: enriched,
+            data,
             page,
             limit: total,
             total,
             totalPages: 1,
-            ruleSetVersion: activeRuleSetVersion ?? KPI_RULE_SET_VERSION_V1,
-            contractVersion: METRICS_API_CONTRACT_VERSION,
         });
     } catch (err) {
         console.error(err);

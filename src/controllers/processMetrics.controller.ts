@@ -269,7 +269,7 @@ export const getProcessMetricsHealth = async (req: Request, res: Response) => {
 };
 
 // GET /api/process/metrics
-// Lista materializados con paginación/filtros para operación/admin.
+// Fuente oficial KPI: lista materializados con paginacion/filtros y KPIs globales.
 export const getProcessMetrics = async (req: Request, res: Response) => {
     try {
         // Evita cachear listados para consumidores como Power Query.
