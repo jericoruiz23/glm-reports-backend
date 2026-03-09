@@ -5,7 +5,7 @@ import { Counter } from "../models/counter.model";
 import { markProcessMetricsStale } from "../metrics/processMetrics.service";
 import ProcessMetrics from "../models/processMetrics.model";
 import { METRICS_API_CONTRACT_VERSION } from "../metrics/metrics.contract";
-// Crear un nuevo proceso con items completos
+
 const extractSeqFromCodigo = (codigo: string): number | null => {
     if (!codigo) return null;
 
@@ -16,7 +16,6 @@ const extractSeqFromCodigo = (codigo: string): number | null => {
     return Number.isFinite(seq) ? seq : null;
 };
 
-// Ejecuta el marcado stale sin romper el flujo de negocio si falla.
 const markProcessMetricsStaleNoFail = async (
     processDoc: any,
     context: string
@@ -27,7 +26,6 @@ const markProcessMetricsStaleNoFail = async (
         console.error(`Error marcando process_metrics como stale (${context}):`, error);
     }
 };
-
 
 export const createProcess = async (req: Request, res: Response) => {
     try {
@@ -110,7 +108,6 @@ export const createProcess = async (req: Request, res: Response) => {
             }
             return value;
         };
-
 
         // ===============================
         // 2. Construir código oficial
@@ -570,7 +567,4 @@ export const deleteItem = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Error deleting item" });
     }
 };
-
-
-
 

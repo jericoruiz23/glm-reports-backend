@@ -2,20 +2,11 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import { Process } from "../models/controlimport.model";
 
-/**
- * Script de migración: normaliza TODAS las fechas existentes
- * en la colección de procesos a mediodía UTC (T12:00:00.000Z)
- * para evitar desfases de zona horaria.
- *
- * Ejecutar con:  npx ts-node src/config/pruebaBD.ts
- */
-
 const STAGES = ["inicio", "preembarque", "postembarque", "aduana", "despacho"] as const;
 
 function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): boolean {
     if (!obj || typeof obj !== "object" || depth > 10) return false;
 
-    // Evitar referencias circulares
     if (seen.has(obj)) return false;
     seen.add(obj);
 
@@ -32,14 +23,14 @@ function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): b
 
     const keys = Object.keys(obj);
     for (const key of keys) {
-        // Ignorar campos internos de Mongoose y timestamps automáticos
+
         if (key.startsWith("_") || key.startsWith("$") || key === "createdAt" || key === "updatedAt" || key === "__v") continue;
 
         let val: any;
         try {
             val = obj[key];
         } catch {
-            continue; // getter que falla, saltar
+            continue;
         }
 
         if (val instanceof Date) {
@@ -48,7 +39,6 @@ function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): b
             const s = val.getUTCSeconds();
             const ms = val.getUTCMilliseconds();
 
-            // Solo modificar si NO está ya en mediodía
             if (h !== 12 || m !== 0 || s !== 0 || ms !== 0) {
                 val.setUTCHours(12, 0, 0, 0);
                 changed = true;

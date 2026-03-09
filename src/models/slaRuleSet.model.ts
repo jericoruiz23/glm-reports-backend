@@ -1,7 +1,6 @@
 import { Schema, model } from "mongoose";
 import { KPI_RULE_SET_VERSION_V1 } from "../metrics/kpi.contract";
 
-// Versionado de reglas SLA/KPI para activar/desactivar sin deploy.
 const SlaRuleSetSchema = new Schema(
     {
         version: {

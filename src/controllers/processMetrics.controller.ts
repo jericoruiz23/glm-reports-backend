@@ -29,7 +29,6 @@ import {
 } from "../metrics/metricsAudit.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
-// Auditoría no bloqueante: no debe frenar endpoints operativos.
 const fireAndForgetAudit = (
     payload: Parameters<typeof auditMetricsAction>[0]
 ) => {
@@ -38,8 +37,6 @@ const fireAndForgetAudit = (
     });
 };
 
-// GET /api/process/:id/metrics
-// Lee métricas materializadas desde process_metrics (sin recálculo en vivo).
 export const getProcessMetricsByProcessId = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -92,8 +89,6 @@ export const getProcessMetricsByProcessId = async (req: Request, res: Response) 
     }
 };
 
-// POST /api/process/:id/metrics/recalculate
-// Marca stale y opcionalmente ejecuta un job del worker.
 export const recalculateProcessMetrics = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -117,10 +112,8 @@ export const recalculateProcessMetrics = async (req: Request, res: Response) => 
             });
         }
 
-        // 1) Siempre marcar stale para encolar recálculo.
         const activeRuleSetVersion = await markProcessMetricsStale(processDoc);
 
-        // 2) Opcional: disparar un job inmediato para ESTE processId.
         let workerResult: any = null;
         if (runNow) {
             workerResult = await runMetricsJobForProcessId(id, activeRuleSetVersion);
@@ -151,8 +144,6 @@ export const recalculateProcessMetrics = async (req: Request, res: Response) => 
     }
 };
 
-// POST /api/process/metrics/recalculate-by-filter
-// Reencola procesos por filtros operativos (processType y rango de fechas).
 export const recalculateProcessMetricsByFilter = async (
     req: Request,
     res: Response
@@ -193,14 +184,14 @@ export const recalculateProcessMetricsByFilter = async (
         let marked = 0;
         let runNowProcessed = 0;
         for (const processDoc of processes) {
-            // Marca stale y obtiene versión exacta usada para ese proceso.
+
             const staleRuleSetVersion = await markProcessMetricsStale(processDoc);
             marked += 1;
 
             if (runNow) {
                 const targetRuleSetVersion =
                     ruleSetVersionFilter ?? staleRuleSetVersion;
-                // Ejecuta worker dirigido por processId + versión para evitar ambigüedad.
+
                 const result = await runMetricsJobForProcessId(
                     String(processDoc._id),
                     targetRuleSetVersion
@@ -248,8 +239,6 @@ export const recalculateProcessMetricsByFilter = async (
     }
 };
 
-// GET /api/process/metrics/health
-// Devuelve snapshot rápido de salud de la cola de process_metrics.
 export const getProcessMetricsHealth = async (req: Request, res: Response) => {
     try {
         const activeRuleSetVersion = await getActiveRuleSetVersion();
@@ -268,11 +257,9 @@ export const getProcessMetricsHealth = async (req: Request, res: Response) => {
     }
 };
 
-// GET /api/process/metrics
-// Fuente oficial KPI: lista materializados con paginacion/filtros y KPIs globales.
 export const getProcessMetrics = async (req: Request, res: Response) => {
     try {
-        // Evita cachear listados para consumidores como Power Query.
+
         res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
         res.setHeader("Pragma", "no-cache");
         res.setHeader("Expires", "0");
@@ -405,8 +392,6 @@ export const getProcessMetrics = async (req: Request, res: Response) => {
     }
 };
 
-// GET /api/process/metrics/legacy-usage?days=7
-// Mide consumo de legacy=true para controlar plan de corte.
 export const getLegacyUsage = async (req: Request, res: Response) => {
     try {
         const days = Number(req.query.days ?? 7);
@@ -425,8 +410,6 @@ export const getLegacyUsage = async (req: Request, res: Response) => {
     }
 };
 
-// POST /api/process/metrics/retry-errors
-// Reencola errores en forma controlada para permitir retries.
 export const retryErroredProcessMetrics = async (req: Request, res: Response) => {
     try {
         const body = req.body as {
@@ -471,8 +454,6 @@ export const retryErroredProcessMetrics = async (req: Request, res: Response) =>
     }
 };
 
-// GET /api/process/metrics/rule-sets
-// Lista rule sets para operación/gobernanza.
 export const getRuleSets = async (req: Request, res: Response) => {
     try {
         const activeRuleSetVersion = await getActiveRuleSetVersion();
@@ -491,8 +472,6 @@ export const getRuleSets = async (req: Request, res: Response) => {
     }
 };
 
-// POST /api/process/metrics/rule-sets
-// Crea/actualiza definición de rule set sin activarlo.
 export const upsertRuleSet = async (req: Request, res: Response) => {
     try {
         const body = req.body as {
@@ -536,7 +515,6 @@ export const upsertRuleSet = async (req: Request, res: Response) => {
     }
 };
 
-// POST /api/process/metrics/rule-sets/:version/activate
 export const activateRuleSet = async (req: Request, res: Response) => {
     try {
         const version = String(req.params.version ?? "").trim();
@@ -567,7 +545,6 @@ export const activateRuleSet = async (req: Request, res: Response) => {
     }
 };
 
-// POST /api/process/metrics/rule-sets/:version/deactivate
 export const deactivateRuleSet = async (req: Request, res: Response) => {
     try {
         const version = String(req.params.version ?? "").trim();

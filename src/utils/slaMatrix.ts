@@ -47,7 +47,6 @@ export type SLAEntregaBodegaRule = {
     prioridad: number;
 };
 
-
 export const SLA_MATRIX: SLARule[] = [
     {
         regimen: ["10"],
@@ -242,7 +241,6 @@ export const SLA_ENTREGA_BODEGA_MATRIX: SLAEntregaBodegaRule[] = [
     },
 ];
 
-
 const normalizarTexto = (texto: string) =>
     texto
         .normalize("NFD")
@@ -252,7 +250,6 @@ const normalizarTexto = (texto: string) =>
 
 const esPrioridadAlta = (prioridad: string): boolean =>
     prioridad === "PRIORIDAD" || prioridad === "CRITICO";
-
 
 export const resolverSLAEtaEnvio = (process: any): number | null => {
     const regimen = String(process?.inicio?.regimen ?? "");
@@ -293,14 +290,12 @@ export const resolverSLASalidaAutorizada = (process: any): number | null => {
     if (!regimen || !prioridad || !via || !tipoContenedor || !tipoAforo)
         return null;
 
-
     const tipoCarga =
         tipoContenedor.includes("SUELTA")
             ? "CARGA SUELTA"
             : tipoContenedor.includes("CONTAINER") || tipoContenedor.includes("CONTENEDOR")
                 ? "CONTENEDOR"
                 : null;
-
 
     if (!tipoCarga) return null;
 
@@ -313,13 +308,11 @@ export const resolverSLASalidaAutorizada = (process: any): number | null => {
 
     if (!rule) return null;
 
-    // Mapear tipoAforo
     let tipo: "automatico" | "documental" | "fisico" | null = null;
 
     if (tipoAforo.includes("AUTOMATICO")) tipo = "automatico";
     else if (tipoAforo.includes("DOCUMENTAL")) tipo = "documental";
     else if (tipoAforo.includes("FISICO")) tipo = "fisico";
-
 
     if (!tipo) return null;
 
@@ -396,7 +389,6 @@ export const resolverSLAEtaSalidaAutorizada = (process: any): number | null => {
 
     const sla = config[tipo];
 
-    // si es -999 significa que no aplica
     if (sla === -999) return null;
 
     return sla;

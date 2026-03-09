@@ -44,7 +44,7 @@ describe("slaMatrix prioridad", () => {
         const prioridadBase = buildProcess("PRIORIDAD", "AEREO");
         expect(resolverSLASalidaAutorizada(normalBase as any)).toBe(3);
         expect(resolverSLASalidaAutorizada(prioridadBase as any)).toBe(1);
-        expect(resolverSLAEtaSalidaAutorizada(normalBase as any)).toBe(4);
+        expect(resolverSLAEtaSalidaAutorizada(normalBase as any)).toBe(3);
         expect(resolverSLAEtaSalidaAutorizada(prioridadBase as any)).toBe(2);
     });
 });

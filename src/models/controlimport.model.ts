@@ -3,9 +3,7 @@ import { calcularAutomatico } from "../utils/calcs";
 
 const ProcessSchema = new Schema(
     {
-        // -------------------------
-        // META DEL PROCESO
-        // -------------------------
+
         proceso: {
             type: String,
             required: true,
@@ -17,16 +15,11 @@ const ProcessSchema = new Schema(
             index: true,
         },
 
-
-
-        // -------------------------
-        // FORM - INICIO
-        // -------------------------
         inicio: {
             prioridad: {
                 type: String,
                 enum: ["NORMAL", "PRIORIDAD", "CRITICO"],
-                // default: "Normal",
+
             },
             codigoImportacion: String,
             proveedor: String,
@@ -37,7 +30,6 @@ const ProcessSchema = new Schema(
             notificacionBroker: Date,
             referencia: String,
         },
-
 
         estado: {
             type: String,
@@ -57,9 +49,6 @@ const ProcessSchema = new Schema(
             default: false,
         },
 
-        // -------------------------
-        // FORM - PREEMBARQUE
-        // -------------------------
         preembarque: {
             paisOrigen: String,
             fechaFactura: Date,
@@ -138,9 +127,6 @@ const ProcessSchema = new Schema(
             fechaCalloff: Date,
         },
 
-        // -------------------------
-        // FORM - POSTEMBARQUE
-        // -------------------------
         postembarque: {
             blMaster: String,
             blHijo: String,
@@ -158,9 +144,6 @@ const ProcessSchema = new Schema(
             puertoEmbarque: String,
         },
 
-        // -------------------------
-        // FORM - ADUANA
-        // -------------------------
         aduana: {
             fechaEnvioElectronico: Date,
             fechaPagoLiquidacion: Date,
@@ -174,9 +157,6 @@ const ProcessSchema = new Schema(
             statusAduana: String,
         },
 
-        // -------------------------
-        // FORM - DESPACHO
-        // -------------------------
         despacho: {
             fechaFacturacionCostos: Date,
             numeroContainer: String,
@@ -201,9 +181,6 @@ const ProcessSchema = new Schema(
             fechaRegistroPesos: Date,
         },
 
-        // -------------------------
-        // FORM - CAMBIO AUTOMÁTICO
-        // -------------------------
         automatico: {
             proceso: String,
             statusAduana: String,
@@ -219,10 +196,7 @@ const ProcessSchema = new Schema(
             rangoCarpetas: Number,
             diasHabilesRealEtaEnvioElectronico: Number,
             diasHabilesRealEnvioDesaduanizacion: Number,
-            // @deprecated Compatibilidad temporal y solo lectura:
-            // este contrato se mantiene en la colección del formulario mientras
-            // la lectura principal ya usa `process_metrics`.
-            // No extender aquí nuevos KPIs.
+
             cumplimientoDemorraje: {
                 estandar: Number,
                 valorReal: Number,
@@ -245,13 +219,11 @@ const ProcessSchema = new Schema(
     },
     {
         timestamps: true,
-        minimize: false, // 🔥 CLAVE
+        minimize: false,
     }
-
 
 );
 
-// Función para calcular el estado automáticamente según los campos
 export function calcularEstado(proceso: {
     anulado: boolean;
     despacho: { fechaFacturacionCostos?: Date; fechaRealDespachoPuerto?: Date };
@@ -265,21 +237,15 @@ export function calcularEstado(proceso: {
     if (proceso.postembarque?.fechaRealLlegadaPuerto) return "aduana";
     if (proceso.currentStage === "inicio") return "por despachar origen";
 
-    // Opcional: si quieres tener un fallback seguro
     return "por despachar origen";
 }
 
-/**
- * Recorre recursivamente un objeto y normaliza todos los campos Date
- * a mediodía UTC (T12:00:00.000Z) para evitar desfases de zona horaria.
- */
 function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): void {
     if (!obj || typeof obj !== "object" || depth > 10) return;
 
     if (seen.has(obj)) return;
     seen.add(obj);
 
-    // Si es un array de Mongoose (subdocumentos), iterar cada elemento
     if (Array.isArray(obj)) {
         for (const item of obj) {
             normalizeDateFieldsToNoon(item, seen, depth + 1);
@@ -288,14 +254,14 @@ function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): v
     }
 
     for (const key of Object.keys(obj)) {
-        // Ignorar campos internos de Mongoose y timestamps automáticos
+
         if (key.startsWith("_") || key === "createdAt" || key === "updatedAt") continue;
 
         let val: any;
         try {
             val = obj[key];
         } catch {
-            continue; // getter que falla
+            continue;
         }
 
         if (val instanceof Date) {
@@ -307,9 +273,6 @@ function normalizeDateFieldsToNoon(obj: any, seen = new WeakSet(), depth = 0): v
 }
 
 ProcessSchema.pre("save", function (next) {
-    // 1. Normalizar TODAS las fechas del documento a mediodía UTC
-    // Usamos toObject() para evitar problemas con getters de Mongoose si es necesario,
-    // pero aquí modificamos 'this' directamente.
 
     const stages = ["inicio", "preembarque", "postembarque", "aduana", "despacho"] as const;
     try {
@@ -319,12 +282,11 @@ ProcessSchema.pre("save", function (next) {
             }
         }
 
-        // 2. Calcular campos automáticos
         this.automatico = {
             ...this.automatico,
             ...calcularAutomatico(this),
         };
-        // Fase 8: legacy retirado, no mantener cumplimientoDemorraje en runtime.
+
         if (this.automatico && "cumplimientoDemorraje" in this.automatico) {
             delete (this.automatico as any).cumplimientoDemorraje;
         }

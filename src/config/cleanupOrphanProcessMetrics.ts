@@ -4,7 +4,6 @@ import ProcessMetrics from "../models/processMetrics.model";
 import { Process } from "../models/controlimport.model";
 import { Types } from "mongoose";
 
-// Elimina documentos de process_metrics cuyo processId ya no existe.
 const main = async () => {
     await connectDB();
 

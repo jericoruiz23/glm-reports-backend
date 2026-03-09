@@ -67,7 +67,6 @@ export const addCatalogValue = async (req: Request, res: Response) => {
       });
     }
 
-    // 🔒 validar duplicado (case insensitive)
     const exists = catalog.valores.some(
       v => v.label.toLowerCase() === label.toLowerCase()
     );
@@ -78,7 +77,6 @@ export const addCatalogValue = async (req: Request, res: Response) => {
       });
     }
 
-    // 🔑 generar key automáticamente
     const key = label
       .toLowerCase()
       .replace(/\s+/g, "_")
@@ -123,7 +121,6 @@ export const getCatalogById = async (req: Request, res: Response) => {
   }
 };
 
-
 export const deleteCatalogValue = async (req: Request, res: Response) => {
   try {
     const { tipo, key } = req.params;
@@ -133,7 +130,6 @@ export const deleteCatalogValue = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Catálogo no encontrado" });
     }
 
-    // Filtramos el valor que queremos eliminar
     const initialLength = catalogo.valores.length;
     catalogo.valores = catalogo.valores.filter((v) => v.key !== key);
 
@@ -149,7 +145,6 @@ export const deleteCatalogValue = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error al eliminar valor" });
   }
 };
-
 
 export const getCatalogByTipo = async (req: Request, res: Response) => {
   try {
@@ -172,7 +167,6 @@ export const getCatalogByTipo = async (req: Request, res: Response) => {
   }
 };
 
-// GET /api/catalogos/list
 export const getCatalogosList = async (req: Request, res: Response) => {
   try {
     const catalogos = await Catalog.find({}, "_id tipo label");

@@ -7,7 +7,6 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
-// Rate limit básico en memoria para endpoints operativos.
 export const simpleRateLimit = (max: number, windowMs: number) => {
     return (req: Request, res: Response, next: NextFunction) => {
         const now = Date.now();

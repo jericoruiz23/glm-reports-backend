@@ -9,11 +9,9 @@ import {
 
 type CommandMode = "backfill" | "run" | "rebuild";
 
-// Marca histórico completo como stale para encolar recálculo.
 const markHistoricalAsStale = async (batchLogEvery = 200) => {
     let total = 0;
 
-    // Cursor para no cargar toda la colección en memoria.
     const cursor = Process.find().sort({ _id: 1 }).cursor();
 
     for await (const processDoc of cursor) {

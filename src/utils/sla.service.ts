@@ -16,14 +16,8 @@ export const evaluarEtaEnvioElectronico = (process: any) => {
     eta.setUTCHours(12, 0, 0, 0);
     envio.setUTCHours(12, 0, 0, 0);
 
-
-
-
     const diasReales = calcularDiasLaborables(eta, envio);
 
-    // =========================
-    // SLA POSITIVO (tolerancia)
-    // =========================
     if (sla > 0) {
         const atrasado = diasReales > sla;
 
@@ -36,13 +30,9 @@ export const evaluarEtaEnvioElectronico = (process: any) => {
         };
     }
 
-    // =========================
-    // SLA NEGATIVO (exacto antes)
-    // =========================
     if (sla < 0) {
         const diasAnticipacion = Math.abs(sla);
 
-        // restar días hábiles manualmente
         let fechaObjetivo = new Date(eta);
         let count = 0;
 
@@ -85,9 +75,6 @@ export const evaluarEtaSalidaAutorizada = (process: any) => {
 
     const diasReales = calcularDiasLaborables(salida, eta);
 
-    // =========================
-    // SLA POSITIVO (tolerancia)
-    // =========================
     if (sla > 0) {
         const atrasado = diasReales > sla;
 
@@ -100,9 +87,6 @@ export const evaluarEtaSalidaAutorizada = (process: any) => {
         };
     }
 
-    // =========================
-    // SLA NEGATIVO (exacto anticipado)
-    // =========================
     if (sla < 0) {
         const diasAnticipacion = Math.abs(sla);
 

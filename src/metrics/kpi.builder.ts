@@ -10,7 +10,6 @@ import { evaluarEnvioElectronicoSalida, resolverSLASalidaAutorizada } from "../u
 import { DEMORRAJE_ESTANDAR_FALLBACK } from "../utils/demorraje.constants";
 import { calcularDiasLaborables } from "../utils/dateUtils";
 
-// Construye el contrato legado de demorraje cuando aún no existe el materializado.
 const construirContratoDemorrajeFallback = (process: any) => {
     const estandar = DEMORRAJE_ESTANDAR_FALLBACK;
     const estado = evaluarDemorraje(process, estandar);
@@ -39,13 +38,12 @@ const construirContratoDemorrajeFallback = (process: any) => {
     };
 };
 
-// Normaliza KPIs con patrón SLA (eta envio, eta salida, entrega bodega).
 const construirKpiSla = (
     metric: any,
     kpiCode: string,
     metaExtras: Record<string, unknown> = {}
 ): UnifiedKpiMetric => {
-    // Si la regla no aplica o no existe dato suficiente, se marca como "na".
+
     if (!metric) {
         return {
             result: "na",
@@ -269,8 +267,6 @@ const construirKpiGlobalPercent = (
     };
 };
 
-// Construye todos los datos de métricas de tránsito para un proceso.
-// Nota: en Fase 0/1 se mantiene compatibilidad con campos legacy.
 export const construirMetricasTransito = (process: any) => {
     const etaEnvioElectronico = evaluarEtaEnvioElectronico(process);
     const envioElectronicoSalidaAutorizada = evaluarEnvioElectronicoSalida(process);
@@ -377,7 +373,7 @@ export const construirMetricasTransito = (process: any) => {
                     : null,
             meta: {
                 kpiCode: "DEMORRAJE",
-                // Si viene de automatico se considera materializado; si no, fallback en vivo.
+
                 source: process?.automatico?.cumplimientoDemorraje
                     ? "MATERIALIZED_COMPAT"
                     : "LIVE_FALLBACK",
@@ -390,14 +386,14 @@ export const construirMetricasTransito = (process: any) => {
     kpis.ESTANDAR_GLOBAL_TOTAL_PCT = construirKpiGlobalPercent(kpis);
 
     return {
-        // Campos legacy (compatibilidad actual con frontend/consumidores).
+
         demorraje,
         demorrajeContrato,
         etaEnvioElectronico,
         envioElectronicoSalidaAutorizada,
         etaSalidaAutorizada,
         entregaEnBodega,
-        // Contrato unificado de KPIs.
+
         ruleSetVersion: KPI_RULE_SET_VERSION_V1,
         kpiScope: KPI_SCOPE_V1,
         kpis,

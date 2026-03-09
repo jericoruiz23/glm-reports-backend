@@ -5,7 +5,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: "admin" | "viewer";
-  passwordMustChange: boolean; // 👈 NUEVO
+  passwordMustChange: boolean;
 }
 
 const userSchema = new Schema<IUser>(
@@ -20,7 +20,7 @@ const userSchema = new Schema<IUser>(
     },
     passwordMustChange: {
       type: Boolean,
-      default: true, // 👈 CLAVE
+      default: true,
     },
   },
   { timestamps: true }

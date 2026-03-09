@@ -1,4 +1,4 @@
-// utils/calcs.ts
+
 import { calcularDiasLaborables } from "./dateUtils";
 
 export const calcularAutomatico = (process: any) => {
@@ -33,11 +33,6 @@ export const calcularAutomatico = (process: any) => {
     };
 };
 
-/**
- * =========================
- * STATUS ADUANA
- * =========================
- */
 const calcularStatusAduana = (process: any): string | null => {
     if (process.despacho?.fechaRealDespachoPuerto) {
         return "DESPACHADO";
@@ -54,13 +49,6 @@ const calcularStatusAduana = (process: any): string | null => {
     return null;
 };
 
-/**
- * =========================
- * TIEMPO DE TRÁNSITO INTERNACIONAL
- * =========================
- * Días calendario entre:
- * fecha real de embarque y fecha real llegada a puerto
- */
 const calcularTiempoTransitoInternacional = (process: any): number | null => {
     const fechaEmbarque = process?.postembarque?.fechaRealEmbarque;
     const fechaLlegada = process?.postembarque?.fechaRealLlegadaPuerto;
@@ -77,12 +65,6 @@ const calcularTiempoTransitoInternacional = (process: any): number | null => {
     return Math.floor(diffMs / msPorDia);
 };
 
-/**
- * =========================
- * ENVÍO ELECTRÓNICO → SALIDA AUTORIZADA
- * =========================
- * Días laborables
- */
 const calcularDiasLabEnvioElectronicoSalidaAutorizada = (
     process: any
 ): number | null => {
@@ -97,12 +79,6 @@ const calcularDiasLabEnvioElectronicoSalidaAutorizada = (
     );
 };
 
-/**
- * =========================
- * ETA → SALIDA AUTORIZADA
- * =========================
- * Días laborables
- */
 const calcularDiasLabEtaSalidaAutorizada = (
     process: any
 ): number | null => {
@@ -120,12 +96,6 @@ const calcularDiasLabEtaSalidaAutorizada = (
     );
 };
 
-/**
- * =========================
- * LLEGADA PUERTO → DESPACHO PUERTO
- * =========================
- * Días calendario
- */
 const calcularDiasLlegadaDespachoPuerto = (
     process: any
 ): number | null => {
@@ -148,12 +118,6 @@ const calcularDiasLlegadaDespachoPuerto = (
     return Math.floor(diffMs / msPorDia);
 };
 
-/**
- * =========================
- * LLEGADA PUERTO → ENTREGA BODEGA
- * =========================
- * Días calendario
- */
 const calcularDiasCalBodegaLlegadaPuerto = (
     process: any
 ): number | null => {
@@ -176,13 +140,6 @@ const calcularDiasCalBodegaLlegadaPuerto = (
     return Math.floor(diffMs / msPorDia);
 };
 
-/**
- * =========================
- * FACTURACIÓN
- * =========================
- * FECHA FACTURACIÓN COSTOS → ENTREGA BODEGA
- * Días laborables
- */
 const calcularDiasLabFacturacion = (
     process: any
 ): number | null => {
@@ -200,12 +157,6 @@ const calcularDiasLabFacturacion = (
     );
 };
 
-/**
- * =========================
- * ETA → ENVÍO ELECTRÓNICO (REAL)
- * =========================
- * Días laborables
- */
 export const calcularDiasHabilesRealEtaEnvioElectronico = (
     process: any
 ): number | null => {
@@ -228,10 +179,8 @@ export const calcularDiasHabilesRealEtaEnvioElectronico = (
     const tipoContenedor =
         process?.despacho?.tipoContenedor;
 
-    // ---------- Validación fechas ----------
     if (!fechaLlegadaPuerto || !fechaEnvioElectronico) return null;
 
-    // ---------- Normalización ----------
     const regimenValido =
         ["10", "21", "91"].includes(String(regimen));
 
@@ -257,7 +206,6 @@ export const calcularDiasHabilesRealEtaEnvioElectronico = (
     const tipoCargaValido =
         esCargaSuelta || esContenedor;
 
-    // ---------- Validación proceso ----------
     if (
         !regimenValido ||
         !prioridadValida ||
@@ -267,23 +215,14 @@ export const calcularDiasHabilesRealEtaEnvioElectronico = (
         return null;
     }
 
-    // ---------- Protección fechas invertidas ----------
     if (fechaEnvioElectronico < fechaLlegadaPuerto) return 0;
 
-    // ---------- Cálculo ----------
     return calcularDiasLaborables(
         new Date(fechaLlegadaPuerto),
         new Date(fechaEnvioElectronico)
     );
 };
 
-
-/**
- * =========================
- * ENVÍO ELECTRÓNICO → DESADUANIZACIÓN
- * =========================
- * Días laborables
- */
 const calcularDiasHabilesRealEnvioDesaduanizacion = (
     process: any
 ): number | null => {

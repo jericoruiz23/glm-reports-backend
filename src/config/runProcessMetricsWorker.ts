@@ -11,9 +11,8 @@ import {
     releaseMetricsWorkerLock,
 } from "../metrics/workerLock.service";
 
-// Runner operativo para ejecutar lotes del worker desde cron/job scheduler.
 const main = async () => {
-    // Prioridad: CLI args > env vars > defaults.
+
     const limit = Number(
         process.argv[2] ?? process.env.METRICS_WORKER_BATCH_SIZE ?? 100
     );

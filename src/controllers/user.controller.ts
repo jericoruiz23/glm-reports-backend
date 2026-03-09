@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../models/user.model";
 
-// Obtener todos los usuarios
 export const getUsers = async (req: Request, res: Response) => {
     try {
         const users = await User.find().select("-password");
@@ -12,7 +11,6 @@ export const getUsers = async (req: Request, res: Response) => {
     }
 };
 
-// Actualizar un usuario
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -23,7 +21,6 @@ export const updateUser = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Actualizar campos permitidos
         if (name) user.name = name;
         if (email) user.email = email;
         if (role) user.role = role as "admin" | "viewer";
@@ -44,7 +41,6 @@ export const updateUser = async (req: Request, res: Response) => {
     }
 };
 
-// Eliminar un usuario
 export const deleteUser = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;

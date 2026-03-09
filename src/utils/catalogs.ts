@@ -1,4 +1,4 @@
-// src/catalogs.ts
+
 export const catalogs: Record<string, any[]> = {
     paises: [
         "Ecuador",

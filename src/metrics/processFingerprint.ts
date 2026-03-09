@@ -1,7 +1,6 @@
 import crypto from "crypto";
 import { ProcessSlaInput } from "./processMetrics.types";
 
-// Estructura mínima de campos que impactan reglas SLA/KPI.
 type FingerprintShape = {
     inicio: {
         regimen: unknown;
@@ -23,14 +22,12 @@ type FingerprintShape = {
     };
 };
 
-// Normaliza fechas para evitar hashes distintos por formato.
 const normalizeDate = (value: unknown): string | null => {
     if (!value) return null;
     const d = new Date(value as any);
     return Number.isNaN(d.getTime()) ? String(value) : d.toISOString();
 };
 
-// Construye la vista estable de campos que disparan recálculo.
 const buildFingerprintPayload = (processDoc: ProcessSlaInput): FingerprintShape => {
     return {
         inicio: {
@@ -65,7 +62,6 @@ const buildFingerprintPayload = (processDoc: ProcessSlaInput): FingerprintShape 
     };
 };
 
-// Retorna hash SHA-256 estable para detectar cambios relevantes.
 export const buildProcessFingerprint = (processDoc: ProcessSlaInput): string => {
     const payload = buildFingerprintPayload(processDoc);
     const raw = JSON.stringify(payload);

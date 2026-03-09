@@ -4,8 +4,6 @@ import { buildProcessFingerprint } from "./processFingerprint";
 import { ProcessSlaInput } from "./processMetrics.types";
 import { getActiveRuleSetVersion } from "./ruleSet.service";
 
-// Marca métricas de proceso como stale para que luego sean recalculadas.
-// En Fase 1 solo materializamos estado, fingerprint y metadatos básicos.
 export const markProcessMetricsStale = async (
     processDoc: ProcessSlaInput
 ): Promise<string> => {
@@ -38,7 +36,7 @@ export const markProcessMetricsStale = async (
                 lastError: null,
                 retryCount: 0,
             },
-            // Solo en creación inicial dejamos estos campos base.
+
             $setOnInsert: {
                 kpis: [],
                 summary: undefined,

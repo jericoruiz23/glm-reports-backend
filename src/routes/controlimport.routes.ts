@@ -13,41 +13,24 @@ import {
 import { auth } from "../middlewares/auth.middleware";
 import { requireRole } from "../middlewares/role.middleware";
 
-
 const router = Router();
 
 router.get("/", getProcesses);
-/* =========================
-   RUTAS PROTEGIDAS
-========================= */
-router.use(auth); // 🔒 Todas las rutas requieren login
 
-/* =========================
-   CREAR Y LISTAR
-========================= */
+router.use(auth);
+
 router.post("/", createProcess);
 
-/* =========================
-   UTILIDADES (ANTES DE /:id)
-========================= */
-router.get("/preview/codigo", previewCodigo); // 🐛 Fix: Antes de /:id
+router.get("/preview/codigo", previewCodigo);
 
-/* =========================
-   CRUD POR ID
-========================= */
 router.get("/:id", getProcessById);
 router.put("/:id", updateProcess);
-router.delete("/:id", requireRole("admin"), deleteProcess); // 🔒 Solo admin
+router.delete("/:id", requireRole("admin"), deleteProcess);
 
-// Ruta para anular proceso
 router.put("/:id/anular", anularProcess);
 
 router.delete("/:id/items/:codigo", deleteItem);
 
-
-/* =========================
-   ACTUALIZAR ETAPA
-========================= */
 router.patch("/:id/:stage", updateStage);
 
 export default router;

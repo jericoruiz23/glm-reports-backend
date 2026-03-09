@@ -1,14 +1,12 @@
 import { Schema, model, Types } from "mongoose";
 import { KPI_RULE_SET_VERSION_V1, MaterializedKpiItem } from "../metrics/kpi.contract";
 
-// Estados del ciclo de vida de métricas por proceso.
 export type ProcessMetricsStatus =
     | "stale"
     | "calculating"
     | "fresh"
     | "error";
 
-// Documento mínimo de materialización para Fase 1.
 export interface IProcessMetrics {
     processId: Types.ObjectId;
     processUpdatedAt: Date | null;
@@ -56,7 +54,7 @@ const ProcessMetricsSchema = new Schema(
             default: "stale",
             index: true,
         },
-        // En Fase 1 puede quedar vacío; el worker poblará luego.
+
         kpis: {
             type: Array,
             default: [],
@@ -73,7 +71,7 @@ const ProcessMetricsSchema = new Schema(
             type: String,
             default: null,
         },
-        // Conteo de reintentos controlados cuando cae en estado error.
+
         retryCount: {
             type: Number,
             default: 0,
@@ -85,13 +83,11 @@ const ProcessMetricsSchema = new Schema(
     }
 );
 
-// Un documento por proceso + versión de reglas.
 ProcessMetricsSchema.index(
     { processId: 1, ruleSetVersion: 1 },
     { unique: true }
 );
 
-// Soporte para colas/listados por estado de cálculo.
 ProcessMetricsSchema.index({ status: 1, updatedAt: -1 });
 
 export const ProcessMetrics = model("ProcessMetrics", ProcessMetricsSchema);

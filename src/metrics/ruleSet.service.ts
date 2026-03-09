@@ -5,7 +5,6 @@ let activeRuleSetCache = KPI_RULE_SET_VERSION_V1;
 let activeRuleSetLastFetch = 0;
 const CACHE_TTL_MS = 60 * 1000;
 
-// Obtiene versión activa de reglas; fallback seguro si no hay configuración.
 export const getActiveRuleSetVersion = async (): Promise<string> => {
     const now = Date.now();
     if (now - activeRuleSetLastFetch < CACHE_TTL_MS) {
@@ -33,7 +32,6 @@ export const getActiveRuleSetVersion = async (): Promise<string> => {
     return activeRuleSetCache;
 };
 
-// Activa versión de reglas (desactiva las demás para evitar ambigüedad).
 export const activateRuleSetVersion = async (version: string) => {
     await SlaRuleSet.findOneAndUpdate(
         { version },
@@ -59,7 +57,6 @@ export const activateRuleSetVersion = async (version: string) => {
     return activated;
 };
 
-// Desactiva versión específica. Si no queda ninguna activa, restaura fallback.
 export const deactivateRuleSetVersion = async (version: string) => {
     await SlaRuleSet.updateOne({ version }, { $set: { active: false } });
     const remainingActive = await SlaRuleSet.findOne({ active: true }).lean();
@@ -72,7 +69,6 @@ export const deactivateRuleSetVersion = async (version: string) => {
     }
 };
 
-// Crea (o upserta) definición de ruleset sin activarla.
 export const upsertRuleSetVersion = async (
     version: string,
     description = "",

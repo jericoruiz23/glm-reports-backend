@@ -2,8 +2,6 @@ import "dotenv/config";
 import { connectDB } from "./db";
 import { Process } from "../models/controlimport.model";
 
-// Limpieza opcional de campos legacy en `automatico`.
-// Úsalo solo cuando no existan consumidores de compatibilidad.
 const main = async () => {
     await connectDB();
 

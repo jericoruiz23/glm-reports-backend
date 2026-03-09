@@ -1,4 +1,4 @@
-// Contrato de alcance de KPIs congelado para la primera versión.
+
 export const KPI_SCOPE_V1 = [
     "ETA_ENVIO",
     "ENVIO_SALIDA_AUTORIZADA",
@@ -14,13 +14,10 @@ export const KPI_SCOPE_V1 = [
     "ESTANDAR_GLOBAL_TOTAL_PCT",
 ] as const;
 
-// Versión inicial de reglas para trazabilidad de cambios de negocio.
 export const KPI_RULE_SET_VERSION_V1 = "2026.02.v1";
 
-// Resultado estándar final del contrato de KPI.
 export type KpiResult = "success" | "fail" | "pending" | "na";
 
-// Estructura unificada por KPI.
 export interface UnifiedKpiMetric {
     result: KpiResult;
     slaTarget: number | null;
@@ -29,15 +26,12 @@ export interface UnifiedKpiMetric {
     meta: Record<string, unknown>;
 }
 
-// Códigos oficiales de KPI dentro del rule set activo.
 export type KpiCode = (typeof KPI_SCOPE_V1)[number];
 
-// Estructura persistida de cada KPI en process_metrics.
 export interface MaterializedKpiItem extends UnifiedKpiMetric {
     code: string;
 }
 
-// Convierte mapa de KPIs por código a arreglo materializable.
 export const kpisMapToArray = (
     kpis: Record<string, UnifiedKpiMetric>
 ): MaterializedKpiItem[] => {
@@ -51,7 +45,6 @@ export const kpisMapToArray = (
     }));
 };
 
-// Convierte arreglo materializado a mapa por código para compatibilidad API.
 export const kpisArrayToMap = (
     kpis: MaterializedKpiItem[] | null | undefined
 ): Record<string, UnifiedKpiMetric> => {
@@ -70,7 +63,6 @@ export const kpisArrayToMap = (
     return map;
 };
 
-// Convierte el estado de atraso al estándar final del contrato.
 export const resolverResultadoDesdeAtraso = (
     atrasado: boolean | null | undefined
 ): KpiResult => {
@@ -78,7 +70,6 @@ export const resolverResultadoDesdeAtraso = (
     return atrasado ? "fail" : "success";
 };
 
-// Convierte estado legado de demorraje al estándar final del contrato.
 export const resolverResultadoDesdeEstadoDemorraje = (
     estado: "CUMPLE" | "NO_CUMPLE" | null | undefined
 ): KpiResult => {

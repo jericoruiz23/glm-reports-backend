@@ -1,34 +1,23 @@
 import { Schema, model, Document, Types } from "mongoose";
 
-/**
- * Un valor individual dentro de un catálogo
- * Ej: Ecuador, Laptop, Proveedor ABC
- */
 export interface ICatalogValue {
-    key: string;              // valor que se guarda (EC, laptop, prov-1)
-    label: string;            // valor visible (Ecuador, Laptop)
-    activo: boolean;          // soft delete
-    metadata?: Record<string, any>; // datos extra opcionales
+    key: string;
+    label: string;
+    activo: boolean;
+    metadata?: Record<string, any>;
 }
 
-/**
- * Documento principal del catálogo
- * Un documento = un tipo de catálogo
- */
 export interface ICatalog extends Document {
-    tipo: string;             // paisesOrigen, proveedores, descripciones, etc.
-    label: string;            // nombre legible
-    valores: ICatalogValue[]; // opciones del select
-    editable: boolean;        // si se puede modificar desde UI
-    orden: number;            // orden visual
-    tenantId?: Types.ObjectId; // multi-tenant (opcional)
+    tipo: string;
+    label: string;
+    valores: ICatalogValue[];
+    editable: boolean;
+    orden: number;
+    tenantId?: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
 
-/**
- * Schema de los valores del catálogo
- */
 const CatalogValueSchema = new Schema<ICatalogValue>(
     {
         key: {
@@ -51,13 +40,10 @@ const CatalogValueSchema = new Schema<ICatalogValue>(
         }
     },
     {
-        _id: false // no necesitamos _id por cada opción
+        _id: false
     }
 );
 
-/**
- * Schema principal del catálogo
- */
 const CatalogSchema = new Schema<ICatalog>(
     {
         tipo: {
@@ -95,9 +81,6 @@ const CatalogSchema = new Schema<ICatalog>(
     }
 );
 
-/**
- * Evita duplicar catálogos por tipo (y tenant si aplica)
- */
 CatalogSchema.index(
     { tipo: 1, tenantId: 1 },
     { unique: true }

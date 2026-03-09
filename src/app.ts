@@ -19,8 +19,6 @@ export const startServer = async () => {
 
   app.use(helmet());
 
-
-  // ✅ CORS (temporalmente abierto para Cloud Run)
   const allowedOrigins = [
     "http://localhost:3000",
     "https://lopezmena-importaciones.web.app",
@@ -41,31 +39,23 @@ export const startServer = async () => {
     })
   );
 
-
-  // ✅ Cookie parser
   app.use(cookieParser());
 
-  // ✅ JSON
   app.use(express.json());
 
-  // ✅ Health check (Cloud Run friendly)
   app.get('/health', (_req, res) => {
     res.status(200).json({ ok: true });
   });
 
-  // 🔹 Rutas
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
-  // Rutas de métricas materializadas por proceso.
-  // Deben montarse antes de `controlImportRoutes` para evitar colisión con `/:id`.
+
   app.use('/api/process', processMetricsRoutes);
   app.use('/api/process', controlImportRoutes);
   app.use("/api/catalogos", catalogRoutes);
 
-  // ❌ Errores
   app.use(errorHandler);
 
-  // ✅ Puerto OBLIGATORIO (Cloud Run)
   const port = Number(process.env.PORT);
   if (!port) {
     throw new Error('PORT no definido por el entorno');

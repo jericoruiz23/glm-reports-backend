@@ -11,7 +11,7 @@ export const calcularDiasLaborables = (fechaInicio: Date, fechaFin: Date): numbe
     const current = new Date(start);
 
     while (current < end) {
-        const day = current.getDay(); // 0=domingo, 6=sábado
+        const day = current.getDay();
         if (day !== 0 && day !== 6) {
             dias++;
         }

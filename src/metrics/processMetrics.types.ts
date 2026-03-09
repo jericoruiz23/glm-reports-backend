@@ -1,6 +1,5 @@
 import { Types } from "mongoose";
 
-// Subconjunto de datos de Process necesarios para cálculo/fingerprint.
 export interface ProcessSlaInput {
     _id: Types.ObjectId | string;
     updatedAt?: Date | string;
@@ -34,7 +33,6 @@ export interface ProcessSlaInput {
     } | null;
 }
 
-// Documento mínimo esperado en process_metrics para el worker.
 export interface ProcessMetricsQueueDoc {
     _id: Types.ObjectId | string;
     processId: Types.ObjectId | string;

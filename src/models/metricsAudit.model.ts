@@ -1,6 +1,5 @@
 import { Schema, model, Types } from "mongoose";
 
-// Auditoría básica de acciones operativas sobre métricas/rulesets.
 const MetricsAuditSchema = new Schema(
     {
         action: {

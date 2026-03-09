@@ -3,7 +3,6 @@ import MetricsWorkerLock from "../models/metricsWorkerLock.model";
 
 const WORKER_LOCK_NAME = "process-metrics-worker";
 
-// Intenta adquirir lock. Devuelve true si lo obtiene, false si ya existe uno vigente.
 export const acquireMetricsWorkerLock = async (
     ttlMs = 120_000
 ): Promise<boolean> => {

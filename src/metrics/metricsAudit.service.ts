@@ -10,7 +10,6 @@ type AuditPayload = {
     payload?: Record<string, unknown>;
 };
 
-// Escribe auditoría en modo best-effort (no rompe operación principal).
 export const auditMetricsAction = async ({
     action,
     req,
@@ -38,12 +37,11 @@ export const auditMetricsAction = async ({
             payload: payload ?? {},
         });
     } catch (error) {
-        // Logging local para troubleshooting; sin propagación de error.
+
         console.error("metrics audit write failed:", error);
     }
 };
 
-// Devuelve conteo de llamadas legacy=true en ventana de días.
 export const getLegacyUsageStats = async (days = 7) => {
     const safeDays =
         Number.isFinite(days) && days > 0 ? Math.floor(days) : 7;

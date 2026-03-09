@@ -1,10 +1,9 @@
-// src/controllers/auth.controller.ts
+
 import { Request, Response } from "express";
 import { User } from "../models/user.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// 🔹 INTERFAZ PARA REQ CON USUARIO
 export interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -13,9 +12,6 @@ export interface AuthRequest extends Request {
   };
 }
 
-// -------------------------
-// Registro de usuario
-// -------------------------
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, role } = req.body;
@@ -58,9 +54,6 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-// -------------------------
-// Login
-// -------------------------
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -119,31 +112,23 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// -------------------------
-// Cambio de contraseña
-// -------------------------
 export const changePassword = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.id) {
       return res.status(400).json({ message: "No se encontró usuario" });
     }
 
-
     let { newPassword } = req.body;
     console.log("newPassword raw:", req.body.newPassword);
     console.log("type:", typeof req.body.newPassword);
     console.log("length:", req.body.newPassword?.length);
 
-
-    // ✅ Asegurar string
     if (typeof newPassword !== "string") {
       return res.status(400).json({ message: "Formato de contraseña inválido" });
     }
 
-    // ✅ Limpiar espacios invisibles
     newPassword = newPassword.trim();
 
-    // ✅ Misma regla que frontend
     if (newPassword.length < 8) {
       return res.status(400).json({ message: "Contraseña muy corta" });
     }
@@ -161,7 +146,6 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     console.error(err);
     return res.status(500).json({ message: "Error del servidor" });
   }
-
 
 };
 

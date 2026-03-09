@@ -25,24 +25,23 @@ export interface ProcessMetricsQueueHealth {
     freshCount: number;
     errorCount: number;
     freshRate: number;
-    // Edad en minutos desde el último cálculo exitoso.
+
     minutesSinceLastCalculatedAt: number | null;
     lastCalculatedAt: Date | null;
     maxFreshAgeMinutes: number | null;
 }
 
-// Procesa un documento ya reclamado en estado "calculating".
 const processClaimedMetricsDoc = async (
     claimed: ProcessMetricsQueueDoc
 ): Promise<RunOneMetricsJobResult> => {
     const processId = String(claimed?.processId ?? "");
     const startedAt = Date.now();
     try {
-        // 3) Cargar proceso origen.
+
         const processDoc = (await Process.findById(claimed.processId).lean()) as ProcessSlaInput | null;
 
         if (!processDoc) {
-            // Si el proceso ya no existe, dejamos estado error.
+
             await ProcessMetrics.findOneAndUpdate(
                 { _id: claimed._id, status: "calculating" },
                 {
@@ -61,12 +60,10 @@ const processClaimedMetricsDoc = async (
             };
         }
 
-        // 4) Recalcular fingerprint y validar coherencia de snapshot.
         const recalculatedFingerprint = buildProcessFingerprint(processDoc);
 
         if (recalculatedFingerprint !== claimed.processFingerprint) {
-            // El proceso cambió durante la ventana de cálculo.
-            // Se reencola como stale para reprocesar snapshot vigente.
+
             await ProcessMetrics.findOneAndUpdate(
                 { _id: claimed._id, status: "calculating" },
                 {
@@ -91,7 +88,6 @@ const processClaimedMetricsDoc = async (
             };
         }
 
-        // 5) Cálculo puro + persistencia materializada.
         const computed = computeProcessMetrics(
             processDoc,
             claimed.ruleSetVersion ?? KPI_RULE_SET_VERSION_V1
@@ -128,7 +124,7 @@ const processClaimedMetricsDoc = async (
         );
         return result;
     } catch (error: unknown) {
-        // 6) Falla de cálculo/persistencia -> estado error.
+
         const message =
             error instanceof Error ? error.message : "Unknown worker error";
         await ProcessMetrics.findOneAndUpdate(
@@ -161,9 +157,8 @@ const processClaimedMetricsDoc = async (
     }
 };
 
-// Ejecuta un trabajo de cálculo para 1 documento stale.
 export const runOneMetricsJob = async (): Promise<RunOneMetricsJobResult> => {
-    // 1) Claim atómico de un registro stale (oldest first).
+
     const claimed = await ProcessMetrics.findOneAndUpdate(
         {
             status: "stale",
@@ -191,13 +186,11 @@ export const runOneMetricsJob = async (): Promise<RunOneMetricsJobResult> => {
     return processClaimedMetricsDoc(claimed as unknown as ProcessMetricsQueueDoc);
 };
 
-// Ejecuta el cálculo para un processId específico.
-// Evita el bug donde runNow procesa otro proceso distinto.
 export const runMetricsJobForProcessId = async (
     processId: string,
     ruleSetVersion?: string
 ): Promise<RunOneMetricsJobResult> => {
-    // Claim atómico filtrado por processId.
+
     const query: Record<string, unknown> = {
         processId,
         status: "stale",
@@ -230,7 +223,6 @@ export const runMetricsJobForProcessId = async (
     return processClaimedMetricsDoc(claimed as unknown as ProcessMetricsQueueDoc);
 };
 
-// Ejecuta varios jobs en secuencia, hasta agotar stale o alcanzar límite.
 export const runBatch = async (limit = 10): Promise<RunOneMetricsJobResult[]> => {
     const safeLimit =
         Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : 1;
@@ -245,7 +237,6 @@ export const runBatch = async (limit = 10): Promise<RunOneMetricsJobResult[]> =>
         }
     }
 
-    // Métricas operativas básicas del batch para monitoreo.
     const fresh = results.filter((r) => r.status === "fresh").length;
     const staleRequeued = results.filter((r) => r.status === "stale_requeued").length;
     const error = results.filter((r) => r.status === "error").length;

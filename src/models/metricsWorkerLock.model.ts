@@ -1,6 +1,5 @@
 import { Schema, model } from "mongoose";
 
-// Lock distribuido simple para evitar solapamiento de ejecuciones del worker.
 const MetricsWorkerLockSchema = new Schema(
     {
         name: {
